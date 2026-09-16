@@ -2,6 +2,8 @@
 
 Private badminton tracking for a friend group. Built with Next.js, TypeScript, Tailwind, shadcn/ui, and Supabase Postgres + email/password Auth.
 
+[Open the Vercel preview](https://gamers-badminton-ph3062poc-rajs-projects-3341c1f6.vercel.app).
+
 ## Built
 
 - Private groups with random, seven-day invite codes.
