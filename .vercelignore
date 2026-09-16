@@ -1,0 +1,10 @@
+.env*
+.mcp.json
+supabase/
+tests/
+scripts/
+test-results/
+playwright-report/
+docs/
+AGENTS.md
+CLAUDE.md
