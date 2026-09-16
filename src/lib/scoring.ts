@@ -20,3 +20,9 @@ export function dubaiDate(date: string, options?: Intl.DateTimeFormatOptions) {
     ...options,
   }).format(new Date(date.length === 10 ? `${date}T12:00:00+04:00` : date));
 }
+
+// Session dates are stored as Dubai calendar days, so ranges are computed in that zone.
+export function dubaiToday(daysAgo = 0) {
+  const now = new Date(Date.now() - daysAgo * 86400000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+}

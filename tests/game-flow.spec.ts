@@ -68,6 +68,14 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
     await nav.getByRole("button", { name: "History", exact: true }).click();
+    const filter = page.getByRole("group", { name: "Show sessions from" });
+    await filter.getByRole("button", { name: "Today", exact: true }).click();
+    await expect(page.getByRole("button", { name: /Session finished Games to 11/ }).first()).toBeVisible();
+    await filter.getByRole("button", { name: "Custom", exact: true }).click();
+    await page.getByLabel("From", { exact: true }).fill("2020-01-01");
+    await page.getByLabel("To", { exact: true }).fill("2020-01-31");
+    await expect(page.getByRole("heading", { name: "No sessions in this range." })).toBeVisible();
+    await filter.getByRole("button", { name: "7 days", exact: true }).click();
     await page.getByRole("button", { name: /Session finished Games to 11/ }).first().click();
     await expect(page.getByRole("region", { name: "History", exact: true }).getByRole("button", { name: "Edit game 1", exact: true })).toBeVisible();
     await nav.getByRole("button", { name: "Stats", exact: true }).click();
