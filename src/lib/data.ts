@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Game, GameInput, Group, Member, Player, PlayerStats, Session, SessionData, Workspace } from "./types";
-
-const groupColumns = "id,name,created_by,created_at,invite_expires_at";
+import type { Game, GameInput, Player, PlayerStats, Session, SessionData, Workspace } from "./types";
 
 async function author() {
   const { data, error } = await createClient().auth.getClaims();
@@ -12,48 +10,23 @@ async function author() {
 function fail(error: { message: string; code?: string } | null) {
   if (!error) return;
   if (error.code === "23505") throw new Error("That name or active session already exists. Refresh and try again.", { cause: error.code });
-  if (error.code === "42501") throw new Error("You no longer have permission to do that. Check your group membership.", { cause: error.code });
+  if (error.code === "42501") throw new Error("You no longer have permission to do that. Sign in again.", { cause: error.code });
   throw new Error(error.message, { cause: error.code });
 }
 
-export async function listGroups(): Promise<Group[]> {
-  const { data, error } = await createClient().from("groups").select(groupColumns).order("created_at");
-  fail(error);
-  return data as Group[];
-}
-
-export async function createGroup(name: string): Promise<{ group_id: string; invite_code: string }> {
-  const { data, error } = await createClient().rpc("create_group", { group_name: name.trim() });
-  fail(error);
-  return data as { group_id: string; invite_code: string };
-}
-
-export async function joinGroup(code: string): Promise<string> {
-  const { data, error } = await createClient().rpc("join_group", { invite_code: code.trim() });
-  fail(error);
-  return data!;
-}
-
-export async function rotateInvite(groupId: string): Promise<string> {
-  const { data, error } = await createClient().rpc("rotate_invite", { gid: groupId });
-  fail(error);
-  return data!;
-}
-
-export async function loadWorkspace(groupId: string): Promise<Workspace> {
+export async function loadWorkspace(): Promise<Workspace> {
   const supabase = createClient();
-  const [group, players, sessions, members] = await Promise.all([
-    supabase.from("groups").select(groupColumns).eq("id", groupId).single(),
-    supabase.from("players").select("*").eq("group_id", groupId).order("display_name"),
-    supabase.from("sessions").select("*").eq("group_id", groupId).order("created_at", { ascending: false }).limit(50),
-    supabase.from("group_members").select("*").eq("group_id", groupId),
+  const [players, sessions] = await Promise.all([
+    supabase.from("players").select("*").order("display_name"),
+    supabase.from("sessions").select("*").order("created_at", { ascending: false }).limit(50),
   ]);
-  [group, players, sessions, members].forEach((result) => fail(result.error));
-  return { group: group.data as Group, players: players.data as Player[], sessions: sessions.data as Session[], members: members.data as Member[] };
+  fail(players.error);
+  fail(sessions.error);
+  return { players: players.data as Player[], sessions: sessions.data as Session[] };
 }
 
-export async function loadOlderSessions(groupId: string, before: string): Promise<Session[]> {
-  const { data, error } = await createClient().from("sessions").select("*").eq("group_id", groupId)
+export async function loadOlderSessions(before: string): Promise<Session[]> {
+  const { data, error } = await createClient().from("sessions").select("*")
     .lt("created_at", before).order("created_at", { ascending: false }).limit(50);
   fail(error);
   return data as Session[];
@@ -78,9 +51,9 @@ export async function loadSession(sessionId: string): Promise<SessionData> {
   return { session: session.data as Session, playerIds: attendance.data!.map((row) => row.player_id), games };
 }
 
-export async function addPlayer(groupId: string, name: string): Promise<Player> {
+export async function addPlayer(name: string): Promise<Player> {
   const created_by = await author();
-  const { data, error } = await createClient().from("players").insert({ group_id: groupId, display_name: name.trim(), created_by }).select().single();
+  const { data, error } = await createClient().from("players").insert({ display_name: name.trim(), created_by }).select().single();
   fail(error);
   return data as Player;
 }
@@ -92,15 +65,15 @@ export async function archivePlayer(playerId: string): Promise<void> {
   if (!data) throw new Error("Player no longer exists.");
 }
 
-export async function startSession(groupId: string, playerIds: string[], target: number): Promise<string> {
-  const { data, error } = await createClient().rpc("start_session", { gid: groupId, attendees: playerIds, points: target });
+export async function startSession(playerIds: string[], target: number): Promise<string> {
+  const { data, error } = await createClient().rpc("start_session", { attendees: playerIds, points: target });
   fail(error);
   return data!;
 }
 
 export async function addAttendee(session: Session, playerId: string): Promise<void> {
   const created_by = await author();
-  const { error } = await createClient().from("session_players").insert({ session_id: session.id, group_id: session.group_id, player_id: playerId, created_by });
+  const { error } = await createClient().from("session_players").insert({ session_id: session.id, player_id: playerId, created_by });
   if (error?.code !== "23505") fail(error);
 }
 
@@ -148,13 +121,8 @@ export async function deleteGame(id: string): Promise<void> {
   fail(error);
 }
 
-export async function loadStats(groupId: string): Promise<PlayerStats[]> {
-  const { data, error } = await createClient().rpc("player_stats", { gid: groupId });
+export async function loadStats(): Promise<PlayerStats[]> {
+  const { data, error } = await createClient().rpc("player_stats");
   fail(error);
   return data!;
-}
-
-export async function leaveGroup(groupId: string, userId: string): Promise<void> {
-  const { error } = await createClient().from("group_members").delete().eq("group_id", groupId).eq("user_id", userId).select("user_id").single();
-  fail(error);
 }

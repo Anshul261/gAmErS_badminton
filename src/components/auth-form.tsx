@@ -32,7 +32,7 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
         });
         if (error) throw error;
         if (!data.session) {
-          setMessage("Check your email to confirm your account. Open the link in this browser, then join with your group's invite code.");
+          setMessage("Check your email to confirm your account, then open the link in this browser.");
           return;
         }
       } else if (mode === "forgot") {
@@ -62,7 +62,7 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
   return (
     <main className="min-h-dvh bg-background lg:grid lg:grid-cols-[1.1fr_1fr]">
       <section className="relative flex min-h-56 flex-col justify-between overflow-hidden bg-primary px-6 py-6 text-primary-foreground md:px-12 lg:min-h-dvh lg:p-16">
-        <div className="relative z-10 flex items-center gap-3 text-xl font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-full border border-white/40 text-sm">C.</span> courtside</div>
+        <div className="relative z-10 flex items-center gap-3 text-xl font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-full border border-white/40 text-sm">g.</span> gAmErS cOuRtSiDe</div>
         <div className="relative z-10 my-7 max-w-md lg:my-24">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-accent">Your people. Your scorebook.</p>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.045em] md:text-5xl lg:text-6xl">Play the game.<br />Keep the receipts.</h1>
@@ -75,7 +75,7 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
         <div className="w-full max-w-sm">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Friends only</p>
           <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{mode === "signup" ? "An account gets you in the door. An invite code gets you into your group." : mode === "forgot" ? "Enter your email and we'll send a reset link." : mode === "reset" ? "Use at least 8 characters." : "Sign in to your group's games, scores, and friendly rivalries."}</p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{mode === "signup" ? "Create an account and you're on the court with the rest of the crew." : mode === "forgot" ? "Enter your email and we'll send a reset link." : mode === "reset" ? "Use at least 8 characters." : "Sign in to the crew's games, scores, and friendly rivalries."}</p>
           <form onSubmit={submit} className="mt-6 space-y-5">
             <fieldset disabled={pending} className="space-y-5">
               {mode !== "reset" ? <div className="space-y-2"><Label htmlFor="email">Email</Label><Input className="h-12 bg-card text-base md:text-base" id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} /></div> : null}
@@ -87,7 +87,7 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
           </form>
           {mode === "login" ? <Button variant="link" disabled={pending} className="mt-2 h-11 px-0" onClick={() => { setMode("forgot"); setError(""); setMessage(""); }}>Forgot password?</Button> : null}
           {mode !== "reset" ? <div className="mt-6 border-t pt-5 text-sm text-muted-foreground">{mode === "login" ? "First game with us?" : "Already have an account?"} <button type="button" disabled={pending} className="min-h-11 font-semibold text-foreground underline underline-offset-4" onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setMessage(""); }}>{mode === "login" ? "Create account" : "Sign in"}</button></div> : null}
-          <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><LockClosedIcon aria-hidden="true" width={15} height={15} />Only your group can see your games.</p>
+          <p className="mt-6 flex items-center gap-2 text-xs text-muted-foreground"><LockClosedIcon aria-hidden="true" width={15} height={15} />Only signed-in friends can see the games.</p>
         </div>
       </section>
     </main>

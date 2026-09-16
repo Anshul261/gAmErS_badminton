@@ -4,11 +4,11 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Courtside | Badminton with your people",
-  description: "A private scorebook for your badminton group.",
+  title: "gAmErS cOuRtSiDe | Badminton with your people",
+  description: "The gAmErS badminton scorebook.",
   robots: { index: false, follow: false },
   icons: { icon: "/icon.svg" },
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Courtside" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "gAmErS cOuRtSiDe" },
 };
 
 export const viewport: Viewport = {

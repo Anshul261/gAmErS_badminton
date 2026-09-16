@@ -1,60 +1,53 @@
-# Courtside
+# gAmErS cOuRtSiDe
 
-Private badminton tracking for a friend group. Built with Next.js, TypeScript, Tailwind, shadcn/ui, and Supabase Postgres + email/password Auth.
+The badminton scorebook for one crew. Next.js, TypeScript, Tailwind, shadcn/ui, and Supabase Postgres + email/password Auth. Deployed on Vercel Hobby.
 
-[Open the Vercel preview](https://gamers-badminton-ph3062poc-rajs-projects-3341c1f6.vercel.app).
+## How it works
 
-## Built
+- One court, no groups. Anyone who creates an account is in. Share the address only with friends, then close sign-ups (see below).
+- Players are names on the score sheet, not accounts. Add them in **People**.
+- Start a session with the people playing, log 1v1 / 1v2 / 2v2 games to 11 or 21 (win by two), add late arrivals, finish the session.
+- Other phones update every few seconds. Scores can be corrected or deleted from the session or from **History**; **Stats** recalculates.
 
-- Private groups with random, seven-day invite codes.
-- Player rosters, session attendance, and late arrivals.
-- Fast 1v1, 1v2, and 2v2 logging. Games to 11 or 21, win by two.
-- Cross-phone updates, score corrections, session history, and player stats.
-- Mobile-first UI with Geist fonts and Radix icons.
-- Versioned migrations applied to Supabase; Vercel Hobby configuration included.
-
-## Run
-
-Set these in `.env.local`, using `.env.example` as the reference:
-
-```dotenv
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-```
+## Run locally
 
 ```sh
+cp .env.example .env.local   # hosted project keys, or use npm run dev:local against Docker
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. Create an account and group, add players, then start a session.
+`npm run dev:local` starts against the local Supabase stack from `npm run db:start` instead.
+
+## Deploy
+
+The Vercel project reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Apply `supabase/migrations/` to the hosted project, then:
+
+```sh
+vercel --prod
+```
+
+Point Supabase Auth at the deployed address (sets the site URL and callback allow-list; add `--close-signups` once everyone has an account):
+
+```sh
+SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https://your-app.vercel.app
+```
 
 ## Security
 
-All six public tables have RLS. Membership comes from `auth.uid()`; joining requires the invite RPC. Postgres enforces scores, attendance, group isolation, and write attribution. The app uses no secret or legacy API keys. Environment files are excluded from Git and deployment uploads.
+Four tables, all with RLS; `anon` can do nothing; every write is attributed to the signed-in user; no `SECURITY DEFINER` functions. Postgres enforces scores, attendance, and closed sessions. See [docs/security.md](docs/security.md).
 
-See [security details](docs/security.md). SQL changes live in `supabase/migrations/`.
-
-## Verification
-
-Verified the production build, 23 scoring tests, RLS and concurrency checks, and mobile/desktop flows including two-browser syncing and conflicting corrections.
+## Verify
 
 ```sh
-npm run lint
-npm test
-npm run build
-npm run db:start
-npm run db:test
-npm run db:test:concurrency
-npm run test:e2e
-npm run db:stop
+npm run lint && npm run typecheck && npm test && npm run build
+npm run db:start && npm run db:test && npm run db:test:concurrency && npm run test:e2e && npm run db:stop
 ```
 
-Database and browser tests use local Docker containers, not hosted data. `db:stop` removes this project's containers and preserves its local data volume.
+Database and browser tests only ever run against the local Docker stack.
 
 ## Limits
 
 - No offline queue. Open sessions refresh about every four seconds.
-- Password recovery for friends needs SMTP configuration. Email confirmation is currently off.
-- Free plans have quotas and may pause inactive projects.
-- Moving away from Supabase requires replacing the small Data API adapter and migrating Auth, not just changing a connection string.
+- Password recovery emails need SMTP configured in Supabase. Email confirmation is off.
+- Free tiers have quotas and Supabase pauses inactive projects.

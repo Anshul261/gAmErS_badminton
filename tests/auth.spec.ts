@@ -11,6 +11,7 @@ test("sign up with email and password on desktop and mobile", async ({ page }) =
   await page.getByRole("button", { name: "Create account", exact: true }).click();
   await expect(page).toHaveURL("http://localhost:3001/");
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "gAmErS", exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Sign out" }).click();

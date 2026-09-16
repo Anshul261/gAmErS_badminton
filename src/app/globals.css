@@ -86,19 +86,17 @@
 .cs-skip-link { @apply fixed top-3 left-4 z-100 rounded bg-primary px-5 py-3 font-semibold text-primary-foreground; clip-path: inset(50%); }
 .cs-skip-link:focus { clip-path: none; }
 .cs-header { @apply mx-auto flex max-w-7xl items-center justify-between gap-3 border-b px-5 py-3 md:gap-5 md:px-6 md:py-5 lg:px-9; }
-.cs-brand { @apply inline-flex min-h-11 items-center gap-2 text-[25px] leading-none font-bold tracking-[-.06em] no-underline md:gap-2.5 md:text-[28px]; }
-.cs-brand-dot { @apply -ml-2 text-primary md:-ml-2.5; }
+.cs-brand { @apply inline-flex min-h-11 min-w-0 items-center gap-2 text-[21px] leading-none font-bold tracking-[-.05em] no-underline md:gap-2.5 md:text-[27px]; }
+.cs-brand-name { @apply truncate; }
+.cs-brand-dot { @apply -ml-1.5 text-primary md:-ml-2; }
 .cs-brand-mark { position: relative; display: inline-block; width: 23px; height: 28px; margin-right: 1px; border: 2px solid currentColor; transform: rotate(-13deg); }
 .cs-brand-mark::before { content: ""; position: absolute; left: -2px; right: -2px; top: 11px; border-top: 2px solid currentColor; }
 .cs-brand-mark::after { content: ""; position: absolute; top: 0; bottom: 0; left: 5px; right: 5px; border-left: 1px solid currentColor; border-right: 1px solid currentColor; }
 .cs-brand-mark span { position: absolute; top: 3px; bottom: 3px; left: 0; right: 0; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; }
 .cs-header-actions { @apply flex min-w-0 items-center gap-1 md:gap-3; }
-.cs-group-select { @apply min-w-0; }
-.cs-group-select select { @apply min-h-11 w-full max-w-28 text-ellipsis rounded border py-1.5 pr-4 pl-2 text-base md:max-w-56 md:pr-7 md:pl-3; }
 .cs-main { @apply mx-auto max-w-6xl px-5 pt-0 pb-5 md:px-6 md:pb-8 lg:px-9 xl:px-0; }
 .cs-page-heading { @apply flex items-center justify-between gap-3 py-4 md:items-end md:gap-6 md:pt-7 md:pb-6; }
 .cs-page-heading > div { @apply min-w-0; }
-.cs-page-heading .cs-text-button { @apply max-w-24 px-0.5 text-right text-[11px] md:max-w-none md:px-1 md:text-xs; }
 .cs-eyebrow { @apply text-[9px] leading-normal font-semibold tracking-[.14em] text-muted-foreground md:text-[10px]; }
 .cs-page-heading .cs-eyebrow, .cs-session-heading .cs-eyebrow { @apply mb-1.5 md:mb-2; }
 .cs-tabs { @apply mb-7 flex gap-6 border-b; }
@@ -264,14 +262,6 @@
 .cs-invite-panel h3 { @apply mt-2.5 mb-4 text-2xl; }
 .cs-invite-panel > p:not(.cs-eyebrow):not(.cs-help) { @apply mb-4 text-[13px] leading-relaxed; }
 .cs-invite-panel > .cs-button { @apply mt-6 mb-3; }
-.cs-onboarding { @apply grid grid-cols-1 items-center gap-8 pt-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] md:gap-9 md:pt-16 md:pb-11 lg:gap-20; }
-.cs-onboarding-intro h1 { @apply my-4 text-4xl leading-[1.08] tracking-[-.045em] md:my-5 md:text-5xl lg:text-6xl; }
-.cs-onboarding-intro h1 em { @apply not-italic text-primary; }
-.cs-onboarding-intro > p:not(.cs-eyebrow) { @apply max-w-80 text-sm leading-relaxed text-muted-foreground; }
-.cs-onboarding-intro > .cs-decorative-court { @apply mt-9 hidden h-32 max-w-64 rounded-xs border-10 border-primary bg-primary outline-1 outline-primary md:block; }
-.cs-onboarding-form { @apply rounded border bg-card px-5 py-6 md:p-6 lg:p-8; }
-.cs-onboarding-form h2 { @apply my-3 text-2xl; }
-.cs-group-form { @apply mt-6 grid gap-5; }
 .cs-segment-wide { @apply w-full; }
 .cs-segment-wide button { @apply flex-1 px-2; }
 .cs-field .cs-help { @apply mt-2; }
@@ -282,9 +272,6 @@
 .cs-dialog [data-slot="dialog-title"] { @apply pr-8 text-2xl leading-tight font-semibold tracking-tight; }
 .cs-dialog [data-slot="dialog-description"] { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-dialog [data-slot="dialog-close"] { @apply min-h-11 min-w-11; }
-.cs-dialog .cs-group-form { @apply mt-1; }
-.cs-invite-code { @apply grid gap-3.5 rounded bg-accent p-4; }
-.cs-invite-code code { @apply block font-mono text-lg leading-relaxed font-medium tracking-wider wrap-anywhere select-all; }
 .cs-edit-dialog { @apply max-w-[530px]; }
 .cs-edit-dialog .cs-game-form { @apply mt-2; }
 .cs-edit-dialog .cs-court-side { @apply md:min-h-28; }

@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       games: {
@@ -87,75 +112,12 @@ export type Database = {
           },
         ]
       }
-      group_members: {
-        Row: {
-          created_at: string
-          created_by: string
-          group_id: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string
-          group_id: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          group_id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "group_members_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      groups: {
-        Row: {
-          admin_bootstrapped: boolean
-          created_at: string
-          created_by: string
-          id: string
-          invite_expires_at: string
-          invite_hash: string
-          name: string
-        }
-        Insert: {
-          admin_bootstrapped?: boolean
-          created_at?: string
-          created_by?: string
-          id?: string
-          invite_expires_at: string
-          invite_hash: string
-          name: string
-        }
-        Update: {
-          admin_bootstrapped?: boolean
-          created_at?: string
-          created_by?: string
-          id?: string
-          invite_expires_at?: string
-          invite_hash?: string
-          name?: string
-        }
-        Relationships: []
-      }
       players: {
         Row: {
           archived: boolean
           created_at: string
           created_by: string
           display_name: string
-          group_id: string
           id: string
         }
         Insert: {
@@ -163,7 +125,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           display_name: string
-          group_id: string
           id?: string
         }
         Update: {
@@ -171,55 +132,43 @@ export type Database = {
           created_at?: string
           created_by?: string
           display_name?: string
-          group_id?: string
           id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "players_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       session_players: {
         Row: {
           created_at: string
           created_by: string
-          group_id: string
           player_id: string
           session_id: string
         }
         Insert: {
           created_at?: string
           created_by?: string
-          group_id: string
           player_id: string
           session_id: string
         }
         Update: {
           created_at?: string
           created_by?: string
-          group_id?: string
           player_id?: string
           session_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "session_players_group_id_player_id_fkey"
-            columns: ["group_id", "player_id"]
+            foreignKeyName: "session_players_player_id_fkey"
+            columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
-            referencedColumns: ["group_id", "id"]
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "session_players_group_id_session_id_fkey"
-            columns: ["group_id", "session_id"]
+            foreignKeyName: "session_players_session_id_fkey"
+            columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "sessions"
-            referencedColumns: ["group_id", "id"]
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -228,7 +177,6 @@ export type Database = {
           created_at: string
           created_by: string
           ended_at: string | null
-          group_id: string
           id: string
           session_date: string
           target_score: number
@@ -237,7 +185,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           ended_at?: string | null
-          group_id: string
           id?: string
           session_date?: string
           target_score?: number
@@ -246,32 +193,19 @@ export type Database = {
           created_at?: string
           created_by?: string
           ended_at?: string | null
-          group_id?: string
           id?: string
           session_date?: string
           target_score?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "sessions_group_id_fkey"
-            columns: ["group_id"]
-            isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      create_group: { Args: { group_name: string }; Returns: Json }
-      is_group_admin: { Args: { gid: string }; Returns: boolean }
-      is_group_member: { Args: { gid: string }; Returns: boolean }
-      join_group: { Args: { invite_code: string }; Returns: string }
       player_stats: {
-        Args: { gid: string }
+        Args: never
         Returns: {
           played: number
           player_id: string
@@ -280,9 +214,8 @@ export type Database = {
           wins: number
         }[]
       }
-      rotate_invite: { Args: { gid: string }; Returns: string }
       start_session: {
-        Args: { attendees: string[]; gid: string; points?: number }
+        Args: { attendees: string[]; points?: number }
         Returns: string
       }
     }
@@ -413,7 +346,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+
