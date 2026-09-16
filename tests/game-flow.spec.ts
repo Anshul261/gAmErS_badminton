@@ -25,12 +25,17 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await expect(people.getByRole("button", { name: `Archive ${name}` })).toBeVisible();
   }
   await nav.getByRole("button", { name: "Play", exact: true }).click();
-  // Another crew may already be on court from an earlier run; the setup form is always offered.
+  // A lone open court from an earlier run is auto-opened; step out of it to start our own.
   const setup = page.getByRole("form", { name: "Start a session", exact: true });
+  const gameForm = page.getByRole("form", { name: "Log game", exact: true });
+  await expect(setup.or(gameForm)).toBeVisible();
+  if (await gameForm.isVisible()) {
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Another session", exact: true }).click();
+  }
   await expect(setup).toBeVisible();
   for (const name of [riya, sam, jay]) await setup.getByRole("button", { name, exact: true }).click();
   await setup.getByRole("button", { name: "Start session with 3" }).click();
-  const gameForm = page.getByRole("form", { name: "Log game", exact: true });
   await expect(gameForm).toBeVisible();
 
   // A second court runs at the same time and each phone picks which one it logs for.
@@ -96,15 +101,15 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await nav.getByRole("button", { name: "History", exact: true }).click();
     const filter = page.getByRole("group", { name: "Show sessions from" });
     await filter.getByRole("button", { name: "Today", exact: true }).click();
-    await expect(page.getByRole("button", { name: /Session finished Games to 11/ }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: `Session finished ${trio} · Games to 11`, exact: false })).toBeVisible();
     await filter.getByRole("button", { name: "Custom", exact: true }).click();
     await page.getByLabel("From", { exact: true }).fill("2020-01-01");
     await page.getByLabel("To", { exact: true }).fill("2020-01-31");
     await expect(page.getByRole("heading", { name: "No sessions in this range." })).toBeVisible();
     await filter.getByRole("button", { name: "7 days", exact: true }).click();
-    await page.getByRole("button", { name: /On court Games to 11/ }).first().click();
+    await page.getByRole("button", { name: `On court ${duo} · Games to 11`, exact: false }).click();
     await expect(page.getByRole("region", { name: "History", exact: true }).getByText("0 games", { exact: true })).toBeVisible();
-    await page.getByRole("button", { name: /Session finished Games to 11/ }).first().click();
+    await page.getByRole("button", { name: `Session finished ${trio} · Games to 11`, exact: false }).click();
     await expect(page.getByRole("region", { name: "History", exact: true }).getByRole("button", { name: "Edit game 1", exact: true })).toBeVisible();
     await nav.getByRole("button", { name: "Stats", exact: true }).click();
     const table = page.getByRole("table");
@@ -118,12 +123,41 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
+    // A forgotten game: reopen the trio's session from History, log it, finish again.
+    await nav.getByRole("button", { name: "History", exact: true }).click();
+    await page.getByRole("button", { name: `Session finished ${trio} · Games to 11`, exact: false }).click();
+    const historyRegion = page.getByRole("region", { name: "History", exact: true });
+    await historyRegion.getByText("Edit session details").click();
+    const editSession = historyRegion.getByRole("form", { name: "Edit session details", exact: true });
+    await editSession.getByRole("combobox", { name: "Games to" }).selectOption("21");
+    await editSession.getByRole("button", { name: "Save", exact: true }).click();
+    await expect(page.getByRole("button", { name: `Session finished ${trio} · Games to 21`, exact: false })).toBeVisible();
+    await historyRegion.getByRole("button", { name: "Reopen session", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Let the games begin." })).toBeVisible();
+    await expect(page.getByText("3 playing", { exact: true })).toBeVisible();
+    await gameForm.getByRole("button", { name: `Add ${sam} to side A` }).click();
+    await gameForm.getByRole("button", { name: /Side B Pick players/ }).click();
+    await gameForm.getByRole("button", { name: `Add ${jay} to side B` }).click();
+    await gameForm.getByLabel("Side A", { exact: true }).fill("21");
+    await gameForm.getByLabel("Side B", { exact: true }).fill("15");
+    await gameForm.getByRole("button", { name: "Save game", exact: true }).click();
+    await expect(page.getByText("2 games logged", { exact: true })).toBeVisible();
+    page.once("dialog", (dialog) => dialog.accept());
+    await page.getByRole("button", { name: "Finish session", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
+    // The FAQ tab is plain reading.
+    await nav.getByRole("button", { name: "FAQ", exact: true }).click();
+    await page.getByRole("region", { name: "FAQ", exact: true }).getByText("I finished a session but forgot a game").click();
+    await expect(page.getByText(/press Reopen session/)).toBeVisible();
     // Delete the spare session from History; its games leave the stats with it.
     await nav.getByRole("button", { name: "History", exact: true }).click();
-    await page.getByRole("button", { name: /Session finished Games to 11/ }).first().click();
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.getByRole("button", { name: "Delete this session", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Every session has a story." })).toBeVisible();
+    for (const who of [trio, duo]) {
+      await page.getByRole("button", { name: `Session finished ${who} · Games to`, exact: false }).click();
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "Delete this session", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Every session has a story." })).toBeVisible();
+    }
+    await expect(page.getByRole("button", { name: trio, exact: false })).toHaveCount(0);
   } finally {
     await otherContext.close();
   }

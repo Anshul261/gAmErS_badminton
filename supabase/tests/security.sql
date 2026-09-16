@@ -231,8 +231,17 @@ begin
   if row_count <> 1 then raise exception 'Friend could not end session'; end if;
   perform pg_temp.expect_error(format(
     'insert into public.games (id,session_id,side_a_player_1,side_b_player_1,score_a,score_b) values (gen_random_uuid(),%L,%L,%L,11,9)', sid,p1,p2), '23514');
-  perform pg_temp.expect_error(format('update public.sessions set ended_at = null, created_by = %L where id = %L', friend_id, sid), '23514');
-  perform pg_temp.expect_error(format('update public.sessions set ended_at = now() + interval ''1 day'', created_by = %L where id = %L', friend_id, sid), '23514');
+  -- Reopening lets a forgotten game in; finishing again shuts the door.
+  update public.sessions set ended_at = null, created_by = friend_id where id = sid;
+  insert into public.games (id,session_id,side_a_player_1,side_b_player_1,score_a,score_b)
+    values (pg_catalog.gen_random_uuid(),sid,p1,p2,11,7);
+  update public.sessions set ended_at = now(), created_by = friend_id where id = sid;
+  perform pg_temp.expect_error(format(
+    'insert into public.games (id,session_id,side_a_player_1,side_b_player_1,score_a,score_b) values (gen_random_uuid(),%L,%L,%L,11,9)', sid,p1,p2), '23514');
+  update public.sessions set session_date = date '2026-01-02', target_score = 21, created_by = friend_id where id = sid;
+  if not exists (select 1 from public.sessions where id = sid and session_date = date '2026-01-02' and target_score = 21) then
+    raise exception 'Session details could not be edited';
+  end if;
   update public.games set score_b = 8, created_by = friend_id where id = game_id;
   if not found or (select score_b from public.games where id = game_id) <> 8 then
     raise exception 'Closed-session score correction failed';

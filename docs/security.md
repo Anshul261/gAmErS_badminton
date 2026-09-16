@@ -40,7 +40,7 @@ Player names have 1-32 characters, are unique case-insensitively across the cour
 
 ## Closed sessions
 
-Ending a session is irreversible. Friends may correct or delete its existing games but may not insert a new game. The `guard_game_insert` trigger locks the session `FOR SHARE`, which conflicts with the row lock taken by an update of `ended_at`, so an insert and an end cannot interleave. Session and player deletions cascade to attendance and games; the app only archives players.
+While a session is finished, friends may correct or delete its existing games but may not insert a new game. Any friend can reopen it (set `ended_at` back to null) to log a forgotten game and then finish it again; the session's date and target can also be edited. The `guard_game_insert` trigger locks the session `FOR SHARE`, which conflicts with the row lock taken by an update of `ended_at`, so an insert and an end cannot interleave. Session and player deletions cascade to attendance and games; the app only archives players.
 
 ## Verification
 

@@ -7,7 +7,12 @@ The badminton scorebook for one crew. Next.js, TypeScript, Tailwind, shadcn/ui, 
 - One court, no groups. Anyone who creates an account is in. Share the address only with friends, then close sign-ups (see below).
 - Players are names on the score sheet, not accounts. Add them in **People**.
 - Start a session with the people playing, log 1v1 / 1v2 / 2v2 games to 11 or 21 (win by two), add late arrivals, finish the session. Several courts can run at once; each phone picks which session it logs for.
-- Other phones update every few seconds. Scores can be corrected or deleted from the session or from **History**, and a whole session can be deleted there; **Stats** recalculates.
+- Other phones update every few seconds. Scores can be corrected or deleted from the session or from **History**; there a session can also be reopened for a forgotten game, have its date or target edited, or be deleted outright. **Stats** recalculates.
+- **FAQ** tab explains all of this in plain terms.
+
+## Roster backup
+
+`supabase/roster.sql` is a local, gitignored snapshot of the players table (the repo is public). Re-run it in the Supabase SQL editor if the roster ever needs recreating; take a fresh copy after adding people.
 
 ## Run locally
 

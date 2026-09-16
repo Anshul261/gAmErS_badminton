@@ -22,21 +22,23 @@ export async function loadWorkspace(): Promise<Workspace> {
   ]);
   fail(players.error);
   fail(sessions.error);
-  const openIds = (sessions.data as Session[]).filter((session) => !session.ended_at).map((session) => session.id);
-  const attendance: Record<string, string[]> = {};
-  if (openIds.length) {
-    const rows = await supabase.from("session_players").select("session_id,player_id").in("session_id", openIds);
-    fail(rows.error);
-    for (const row of rows.data!) (attendance[row.session_id] ??= []).push(row.player_id);
-  }
-  return { players: players.data as Player[], sessions: sessions.data as Session[], attendance };
+  return { players: players.data as Player[], sessions: sessions.data as Session[], attendance: await loadAttendance(sessions.data as Session[]) };
 }
 
-export async function loadOlderSessions(before: string): Promise<Session[]> {
+async function loadAttendance(sessions: Session[]): Promise<Record<string, string[]>> {
+  const attendance: Record<string, string[]> = {};
+  if (!sessions.length) return attendance;
+  const rows = await createClient().from("session_players").select("session_id,player_id").in("session_id", sessions.map((session) => session.id));
+  fail(rows.error);
+  for (const row of rows.data!) (attendance[row.session_id] ??= []).push(row.player_id);
+  return attendance;
+}
+
+export async function loadOlderSessions(before: string): Promise<{ sessions: Session[]; attendance: Record<string, string[]> }> {
   const { data, error } = await createClient().from("sessions").select("*")
     .lt("created_at", before).order("created_at", { ascending: false }).limit(50);
   fail(error);
-  return data as Session[];
+  return { sessions: data as Session[], attendance: await loadAttendance(data as Session[]) };
 }
 
 export async function loadSession(sessionId: string): Promise<SessionData> {
@@ -95,6 +97,21 @@ export async function endSession(sessionId: string): Promise<void> {
     fail(ended.error);
     if (!ended.data?.ended_at) throw new Error("Couldn't finish the session. Please refresh and try again.");
   }
+}
+
+export async function reopenSession(sessionId: string): Promise<void> {
+  const created_by = await author();
+  const { data, error } = await createClient().from("sessions").update({ ended_at: null, created_by }).eq("id", sessionId).select("id").maybeSingle();
+  fail(error);
+  if (!data) throw new Error("This session no longer exists.");
+}
+
+export async function updateSession(sessionId: string, changes: { session_date: string; target_score: number }): Promise<Session> {
+  const created_by = await author();
+  const { data, error } = await createClient().from("sessions").update({ ...changes, created_by }).eq("id", sessionId).select().maybeSingle();
+  fail(error);
+  if (!data) throw new Error("This session no longer exists.");
+  return data as Session;
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {

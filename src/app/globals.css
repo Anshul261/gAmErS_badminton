@@ -285,7 +285,7 @@
 
 @media (width < 48rem) {
   .cs-app { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
-  .cs-tabs { @apply fixed inset-x-0 bottom-0 z-30 m-0 grid grid-cols-4 gap-0 border-t border-b-0 bg-background px-3 pt-1.5; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
+  .cs-tabs { @apply fixed inset-x-0 bottom-0 z-30 m-0 grid grid-cols-5 gap-0 border-t border-b-0 bg-background px-3 pt-1.5; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
   .cs-tabs button { @apply min-h-14 flex-col gap-1 rounded border-0 px-1 py-1.5 text-[11px]; }
   .cs-tabs button.is-active { @apply bg-accent text-primary; }
   .cs-tabs button.is-active::after { @apply h-0.5 w-3.5 rounded bg-primary content-['']; }
@@ -308,3 +308,12 @@
 .cs-court-list small { @apply text-xs text-muted-foreground; }
 .cs-court-list .cs-button { @apply shrink-0; }
 .cs-court-list .cs-help { @apply mt-3; }
+.cs-session-edit { @apply mb-5 rounded border bg-card px-4 py-3; }
+.cs-session-edit summary { @apply cursor-pointer text-sm font-semibold; }
+.cs-session-edit form { @apply mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end; }
+.cs-session-edit label { @apply grid gap-1.5; }
+.cs-session-edit .cs-input { @apply min-h-11; }
+.cs-faq { @apply grid gap-2; }
+.cs-faq details { @apply rounded border bg-card px-4 py-3; }
+.cs-faq summary { @apply cursor-pointer text-[15px] font-semibold; }
+.cs-faq p { @apply mt-2 text-sm leading-relaxed text-muted-foreground; }
