@@ -129,7 +129,7 @@ begin
   perform pg_temp.expect_error(format('select public.start_session(array[%L,null]::uuid[])', p1), '22023');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[], 15::smallint)', p1, p2), '23514');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[])', p1, ghost), '23503');
-  if exists (select 1 from public.sessions) then raise exception 'Failed start_session left partial data'; end if;
+  if exists (select 1 from public.sessions where created_by = owner_id) then raise exception 'Failed start_session left partial data'; end if;
   sid := public.start_session(array[p1,p2,p3,p4]);
   if (select count(*) from public.session_players where session_id = sid) <> 4
     or not exists (select 1 from public.sessions where id = sid and target_score = 11 and created_by = owner_id
@@ -138,7 +138,7 @@ begin
   end if;
   -- Several courts can be open at once, and a player may be on more than one.
   other_sid := public.start_session(array[p1,p2]);
-  if (select count(*) from public.sessions where ended_at is null) <> 2 then
+  if (select count(*) from public.sessions where ended_at is null and created_by = owner_id) <> 2 then
     raise exception 'Concurrent sessions are not allowed';
   end if;
   delete from public.sessions where id = other_sid;
@@ -197,10 +197,10 @@ begin
 
   -- Any other signed-in friend shares the court and can correct anything, attributed to them.
   perform pg_catalog.set_config('request.jwt.claim.sub', friend_id::text, true);
-  if (select count(*) from public.players) <> 5 or (select count(*) from public.games where session_id = sid) <> 11 then
+  if (select count(*) from public.players where created_by = owner_id) <> 5 or (select count(*) from public.games where session_id = sid) <> 11 then
     raise exception 'Friend cannot read shared data';
   end if;
-  if (select count(*) from public.player_stats()) <> 4 then raise exception 'Friend stats are incomplete'; end if;
+  if (select count(*) from public.player_stats() where player_id in (p1, p2, p3, p4)) <> 4 then raise exception 'Friend stats are incomplete'; end if;
   perform pg_temp.expect_error(format('update public.players set display_name = ''Asha corrected'' where id = %L', p1), '42501');
   update public.players set display_name = 'Asha corrected', created_by = friend_id where id = p1;
   get diagnostics row_count = row_count;
