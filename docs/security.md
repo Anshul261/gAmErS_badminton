@@ -1,6 +1,6 @@
 # Database security
 
-The schema is `supabase/migrations/20260916172505_courtside.sql`. It creates four public tables (`players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. There are no `SECURITY DEFINER` functions.
+The schema lives in `supabase/migrations/`. It creates four public tables (`players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. There are no `SECURITY DEFINER` functions.
 
 ## Access model
 
@@ -21,7 +21,7 @@ Every insert and update policy checks `created_by = auth.uid()`. On updates, sen
 | `start_session` | `attendees uuid[]`, `points smallint DEFAULT 11` | Session UUID |
 | `player_stats` | none | Per-player game, win, and point totals |
 
-`start_session` atomically inserts the session and its attendance. It rejects fewer than two attendees, duplicate UUIDs, and null entries; unknown players fail the foreign key and roll back the whole call. A partial unique index permits only one session with `ended_at IS NULL`, including concurrent calls.
+`start_session` atomically inserts the session and its attendance. It rejects fewer than two attendees, duplicate UUIDs, and null entries; unknown players fail the foreign key and roll back the whole call. Any number of sessions may be open at once (several courts), and a player may be on more than one.
 
 ## Column contract
 

@@ -300,3 +300,11 @@
 .cs-segment-wrap button { @apply whitespace-nowrap px-2 md:px-3; }
 .cs-date-range label { @apply grid flex-1 gap-1.5; }
 .cs-date-range .cs-input { @apply min-h-11; }
+.cs-court-list { @apply md:col-span-2; }
+.cs-court-list ul { @apply grid gap-2; }
+.cs-court-list li { @apply flex items-center justify-between gap-3 rounded border bg-card px-4 py-3; }
+.cs-court-list li > div { @apply grid min-w-0 gap-0.5; }
+.cs-court-list strong { @apply text-sm leading-snug font-semibold; }
+.cs-court-list small { @apply text-xs text-muted-foreground; }
+.cs-court-list .cs-button { @apply shrink-0; }
+.cs-court-list .cs-help { @apply mt-3; }

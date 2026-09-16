@@ -136,7 +136,12 @@ begin
       and session_date = (now() at time zone 'Asia/Dubai')::date) then
     raise exception 'Session or attendance defaults failed';
   end if;
-  perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[])', p1, p2), '23505');
+  -- Several courts can be open at once, and a player may be on more than one.
+  other_sid := public.start_session(array[p1,p2]);
+  if (select count(*) from public.sessions where ended_at is null) <> 2 then
+    raise exception 'Concurrent sessions are not allowed';
+  end if;
+  delete from public.sessions where id = other_sid;
   perform pg_temp.expect_error(format('insert into public.session_players (session_id, player_id) values (%L,%L)', sid, p1), '23505');
   perform pg_temp.expect_error(format('insert into public.session_players (session_id, player_id) values (%L,%L)', sid, ghost), '23503');
 
@@ -239,7 +244,6 @@ begin
   if not exists (select 1 from public.sessions where id = other_sid and target_score = 21 and created_by = friend_id) then
     raise exception 'Friend session start failed';
   end if;
-  perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[])', p3, p4), '23505');
   delete from public.sessions where id = other_sid;
   get diagnostics row_count = row_count;
   if row_count <> 1 or exists (select 1 from public.session_players where session_id = other_sid) then

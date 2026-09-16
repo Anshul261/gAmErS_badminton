@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowDownIcon, ArrowRightIcon, ArchiveIcon, CheckIcon, ChevronRightIcon, CopyIcon, CounterClockwiseClockIcon, ExitIcon, PlusIcon, PlayIcon, ReloadIcon, BarChartIcon, PersonIcon, PauseIcon, Cross2Icon, CheckCircledIcon } from "@radix-ui/react-icons";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameForm } from "@/components/game-form";
-import { addAttendee, addPlayer, archivePlayer, deleteGame, endSession, loadOlderSessions, loadSession, loadStats, loadWorkspace, saveGame, startSession } from "@/lib/data";
+import { addAttendee, addPlayer, archivePlayer, deleteGame, deleteSession, endSession, loadOlderSessions, loadSession, loadStats, loadWorkspace, saveGame, startSession } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { dubaiDate, dubaiToday } from "@/lib/scoring";
 import type { Game, GameInput, PlayerStats, Session, SessionData, Workspace } from "@/lib/types";
@@ -19,7 +19,18 @@ function message(cause: unknown) {
   return cause instanceof Error ? cause.message : "Something went wrong. Please try again.";
 }
 
-export function Courtside() {
+// Each account remembers the court it is logging for, so a reload lands back on it.
+function rememberedSession(userId: string) {
+  try { return window.localStorage.getItem(`courtside:session:${userId}`); } catch { return null; }
+}
+function rememberSession(userId: string, id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(`courtside:session:${userId}`, id);
+    else window.localStorage.removeItem(`courtside:session:${userId}`);
+  } catch { /* Private mode or a full store: the session still works, it just will not stick. */ }
+}
+
+export function Courtside({ userId }: { userId: string }) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [sessions, setSessions] = useState<Record<string, SessionData>>({});
   const [playSessionId, setPlaySessionId] = useState<string | null>(null);
@@ -43,13 +54,14 @@ export function Courtside() {
   const [latePlayerId, setLatePlayerId] = useState("");
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [gameLimit, setGameLimit] = useState(50);
+  const [choosing, setChoosing] = useState(false);
   const [range, setRange] = useState<Range>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const actionLock = useRef(false);
   const revision = useRef(0);
   const refresh = useRef<() => void>(() => {});
-  const activeSession = workspace?.sessions.find((session) => !session.ended_at);
+  const activeSessions = workspace?.sessions.filter((session) => !session.ended_at) ?? [];
   const playData = playSessionId ? sessions[playSessionId] : undefined;
   const selectedId = tab === "history" ? historySessionId : playSessionId;
   const selectedData = selectedId ? sessions[selectedId] : undefined;
@@ -80,8 +92,11 @@ export function Courtside() {
         setWorkspace(currentWorkspace);
         setWorkspaceError("");
         setError((current) => current.startsWith("Updates paused.") ? "" : current);
-        const active = currentWorkspace.sessions.find((session) => !session.ended_at);
-        if (active) setPlaySessionId((current) => current ?? active.id);
+        // Land on the court this account was logging for, then the one it started, then the only one open.
+        const open = currentWorkspace.sessions.filter((session) => !session.ended_at);
+        const remembered = rememberedSession(userId);
+        const mine = open.find((session) => session.id === remembered) ?? open.find((session) => session.created_by === userId) ?? (open.length === 1 ? open[0] : undefined);
+        if (mine && !choosing) setPlaySessionId((current) => current ?? mine.id);
       } catch (cause) {
         if (stale()) return;
         const code = cause instanceof Error ? String(cause.cause ?? "") : "";
@@ -101,7 +116,7 @@ export function Courtside() {
       }
     }
     if (!currentWorkspace || stale()) return;
-    const id = selectedId ?? (tab !== "history" ? currentWorkspace.sessions.find((session) => !session.ended_at)?.id : null);
+    const id = selectedId;
     await Promise.all([
       id ? (async () => {
         try {
@@ -125,7 +140,7 @@ export function Courtside() {
       })() : Promise.resolve(),
     ]);
   });
-  const pollDelay = useEffectEvent(() => activeSession ? 4000 : 15000);
+  const pollDelay = useEffectEvent(() => activeSessions.length ? 4000 : 15000);
 
   useEffect(() => {
     let cancelled = false;
@@ -209,6 +224,23 @@ export function Courtside() {
       // Refresh owns its errors. A recorded game must never look like a failed save.
       refresh.current();
     } finally { actionLock.current = false; }
+  }
+
+  function openSession(id: string) {
+    if (playData && !playEnded && id !== playSessionId && !window.confirm("Open this session? Any unsaved draft for the current one will be lost.")) return;
+    setPlaySessionId(id);
+    rememberSession(userId, id);
+    setChoosing(false);
+    setGameLimit(50);
+  }
+
+  function chooseSession() {
+    if (playData && !playEnded && !window.confirm("Leave this session? Any unsaved game draft will be lost.")) return;
+    setPlaySessionId(null);
+    rememberSession(userId, null);
+    setChoosing(true);
+    setAttendees([]);
+    setGameLimit(50);
   }
 
   function loadMore() {
@@ -296,12 +328,8 @@ export function Courtside() {
           {selectedError ? <div className="cs-banner cs-banner-warning" role="alert"><span>Scores may not be up to date. {selectedError}</span><button className="cs-text-button" disabled={offline} onClick={() => refresh.current()}>Retry</button></div> : null}
 
           <section hidden={tab !== "play"} aria-label="Play">
-            <div className="cs-session-heading"><div><p className="cs-eyebrow">{playData && !playEnded ? "ON COURT" : "MAKE TIME FOR A GAME"}</p><h2>{playData ? playEnded ? "That's a session." : "Let the games begin." : "Who's playing today?"}</h2></div>{playData ? <span className="cs-date-stamp">{dubaiDate(playData.session.session_date, { weekday: "short" })}<span>Dubai time</span></span> : null}</div>
-            {activeSession && activeSession.id !== playSessionId ? <div className="cs-banner"><span>A session is already on court.</span><button className="cs-text-button" disabled={locked} onClick={() => {
-              if (playData && !window.confirm("Open the current session? Any unsaved draft for this session will be lost.")) return;
-              setPlaySessionId(activeSession.id);
-              setGameLimit(50);
-            }}>Open session<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></div> : null}
+            <div className="cs-session-heading"><div><p className="cs-eyebrow">{playData && !playEnded ? "ON COURT" : "MAKE TIME FOR A GAME"}</p><h2>{playData ? playEnded ? "That's a session." : "Let the games begin." : activeSessions.length ? "Pick a court." : "Who's playing today?"}</h2></div>{playData ? <span className="cs-date-stamp">{dubaiDate(playData.session.session_date, { weekday: "short" })}<span>Dubai time</span></span> : null}</div>
+            {playData && activeSessions.length > 1 && !playEnded ? <div className="cs-banner"><span>{activeSessions.length} sessions are on court. Make sure you are logging on the right one.</span><button className="cs-text-button" disabled={locked} onClick={chooseSession}>Switch<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></div> : null}
 
             {playSessionId && !playData ? <div className="cs-loading-sheet" role="status">{!sessionErrors[playSessionId] ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true"><span /><span /></div>) : null}<p>{sessionErrors[playSessionId] ? "This session could not be loaded." : "Loading the score sheet..."}</p></div> : playData ? <>
               <div className="cs-session-strip"><span><PersonIcon width={16} height={16} aria-hidden="true" />{playData.playerIds.length} playing</span><span>{playData.games.length} {playData.games.length === 1 ? "game" : "games"} logged</span><span className="cs-sync-state">{offline || sessionErrors[playData.session.id] || error.startsWith("Updates paused.") ? "Sync paused" : playEnded ? "Finished" : "Updates every 4s"}</span></div>
@@ -324,20 +352,31 @@ export function Courtside() {
                     setSessions((current) => ({ ...current, [playData.session.id]: { ...current[playData.session.id], session: { ...playData.session, ended_at: endedAt } } }));
                     setWorkspace((current) => current ? { ...current, sessions: current.sessions.map((session) => session.id === playData.session.id ? { ...session, ended_at: endedAt } : session) } : current);
                   }, "Session finished. See you next game.");
-                }}><CheckCircledIcon width={17} height={17} aria-hidden="true" />{busy === "finish" ? "Finishing..." : "Finish session"}</button> : !activeSession ? <button className="cs-button cs-button-green cs-full" disabled={locked} onClick={() => {
-                  if (!window.confirm("Set up a new session? Any unsaved draft from this session will be lost.")) return;
-                  setPlaySessionId(null); setAttendees([]); setGameLimit(50);
-                }}><PlusIcon width={17} height={17} aria-hidden="true" />Set up next session</button> : null}<p className="cs-help">Made a mistake? You can edit or delete a game.</p></div></aside>
+                }}><CheckCircledIcon width={17} height={17} aria-hidden="true" />{busy === "finish" ? "Finishing..." : "Finish session"}</button> : null}<button type="button" className={`cs-button cs-full ${playEnded ? "cs-button-green" : "cs-button-outline"}`} disabled={locked} onClick={chooseSession}><PlusIcon width={17} height={17} aria-hidden="true" />{playEnded ? "Set up next session" : "Another session"}</button><p className="cs-help">Made a mistake? You can edit or delete a game.</p></div></aside>
               </div>
-            </> : !activeSession ? <div className="cs-setup-grid"><form className="cs-session-setup" onSubmit={(event) => {
+            </> : <div className="cs-setup-grid">{activeSessions.length ? <div className="cs-court-list"><div className="cs-section-heading"><h3 id="on-court">On court now</h3><span className="cs-count">{activeSessions.length}</span></div><ul aria-labelledby="on-court">{activeSessions.map((session) => {
+              const who = (workspace.attendance[session.id] ?? []).map((id) => names.get(id) ?? "Archived player").sort((a, b) => a.localeCompare(b));
+              return <li key={session.id}><div><strong>{who.length ? who.join(", ") : "No attendees yet"}</strong><small>Started {dubaiDate(session.created_at, { day: undefined, month: undefined, hour: "2-digit", minute: "2-digit" })} · Games to {session.target_score}</small></div><button type="button" className="cs-button cs-button-green" disabled={locked} onClick={() => openSession(session.id)}>Open<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></li>;
+            })}</ul><p className="cs-help">Or start another session below for a second court.</p></div> : null}<form className="cs-session-setup" aria-label="Start a session" onSubmit={(event) => {
               event.preventDefault();
               const ids = attendees.filter((id) => roster.some((player) => player.id === id));
               if (ids.length < 2) { setError("Choose at least two players to start a session."); return; }
-              void mutate("start", async () => { const id = await startSession(ids, target); setPlaySessionId(id); setGameLimit(50); }, "Session started. Your court is ready.");
-            }}><fieldset className="cs-fieldset" disabled={locked}><legend className="cs-label">Who&apos;s in?</legend><p className="cs-help">Tap everyone playing, at least two for a 1v1. You can add late arrivals later.</p>{roster.length ? <div className="cs-chips cs-attendee-chips">{roster.map((player) => <button className={`cs-chip ${attendees.includes(player.id) ? "is-selected" : ""}`} type="button" key={player.id} aria-pressed={attendees.includes(player.id)} onClick={() => setAttendees((current) => current.includes(player.id) ? current.filter((id) => id !== player.id) : [...current, player.id])}>{attendees.includes(player.id) ? <CheckIcon width={16} height={16} aria-hidden="true" /> : <PlusIcon width={16} height={16} aria-hidden="true" />}<span>{player.display_name}</span></button>)}</div> : <div className="cs-empty cs-empty-small"><p>The roster is empty. Add your friends by name. They don&apos;t need an account to play.</p><button type="button" className="cs-button cs-button-outline" onClick={() => setTab("people")}><PlusIcon width={17} height={17} aria-hidden="true" />Add players</button></div>}</fieldset><fieldset className="cs-fieldset cs-setup-target" disabled={locked}><legend className="cs-label">Usual game target</legend><div className="cs-segment">{[11, 21].map((value) => <button type="button" key={value} aria-pressed={target === value} onClick={() => setTarget(value)}>{value} points</button>)}</div><p className="cs-help">Win by two. You can change the target for each game.</p></fieldset><button type="submit" className="cs-button cs-button-green cs-full" disabled={locked || offline || attendees.filter((id) => roster.some((player) => player.id === id)).length < 2}>{busy === "start" ? "Starting session..." : attendees.length < 2 ? `Pick at least 2 players${attendees.length ? ` (${attendees.length} of 2)` : ""}` : `Start session with ${attendees.length}`}<ArrowRightIcon width={18} height={18} aria-hidden="true" /></button></form><aside className="cs-court-note"><div className="cs-decorative-court" aria-hidden="true"><span /><span /></div><p className="cs-eyebrow">THE HOUSE RULES</p><h3>Good games.<br />Honest scores.</h3><p>Singles, doubles or three friends making it work. Everyone on a side shares the result.</p><p>One person can log for the whole crew. Phones down, rackets up.</p></aside></div> : null}
+              void mutate("start", async () => { const id = await startSession(ids, target); setPlaySessionId(id); rememberSession(userId, id); setChoosing(false); setGameLimit(50); }, "Session started. Your court is ready.");
+            }}><fieldset className="cs-fieldset" disabled={locked}><legend className="cs-label">Who&apos;s in?</legend><p className="cs-help">Tap everyone playing, at least two for a 1v1. You can add late arrivals later.</p>{roster.length ? <div className="cs-chips cs-attendee-chips">{roster.map((player) => <button className={`cs-chip ${attendees.includes(player.id) ? "is-selected" : ""}`} type="button" key={player.id} aria-pressed={attendees.includes(player.id)} onClick={() => setAttendees((current) => current.includes(player.id) ? current.filter((id) => id !== player.id) : [...current, player.id])}>{attendees.includes(player.id) ? <CheckIcon width={16} height={16} aria-hidden="true" /> : <PlusIcon width={16} height={16} aria-hidden="true" />}<span>{player.display_name}</span></button>)}</div> : <div className="cs-empty cs-empty-small"><p>The roster is empty. Add your friends by name. They don&apos;t need an account to play.</p><button type="button" className="cs-button cs-button-outline" onClick={() => setTab("people")}><PlusIcon width={17} height={17} aria-hidden="true" />Add players</button></div>}</fieldset><fieldset className="cs-fieldset cs-setup-target" disabled={locked}><legend className="cs-label">Usual game target</legend><div className="cs-segment">{[11, 21].map((value) => <button type="button" key={value} aria-pressed={target === value} onClick={() => setTarget(value)}>{value} points</button>)}</div><p className="cs-help">Win by two. You can change the target for each game.</p></fieldset><button type="submit" className="cs-button cs-button-green cs-full" disabled={locked || offline || attendees.filter((id) => roster.some((player) => player.id === id)).length < 2}>{busy === "start" ? "Starting session..." : attendees.length < 2 ? `Pick at least 2 players${attendees.length ? ` (${attendees.length} of 2)` : ""}` : `Start session with ${attendees.length}`}<ArrowRightIcon width={18} height={18} aria-hidden="true" /></button></form><aside className="cs-court-note"><div className="cs-decorative-court" aria-hidden="true"><span /><span /></div><p className="cs-eyebrow">THE HOUSE RULES</p><h3>Good games.<br />Honest scores.</h3><p>Singles, doubles or three friends making it work. Everyone on a side shares the result.</p><p>One person can log for the whole crew. Phones down, rackets up.</p></aside></div>}
           </section>
 
-          <section hidden={tab !== "history"} aria-label="History"><div className="cs-session-heading"><div><p className="cs-eyebrow">THE GAMES STAY HERE</p><h2>Previously on court.</h2></div><span className="cs-caption">Dates in Dubai time</span></div><div className="cs-history-filter"><div className="cs-segment cs-segment-wrap" role="group" aria-label="Show sessions from">{ranges.map((item) => <button type="button" key={item.id} aria-pressed={range === item.id} onClick={() => setRange(item.id)}>{item.label}</button>)}</div>{range === "custom" ? <div className="cs-inline-form cs-date-range"><label><span className="cs-label">From</span><input className="cs-input" type="date" value={customFrom} max={customTo || dubaiToday()} onChange={(event) => setCustomFrom(event.target.value)} /></label><label><span className="cs-label">To</span><input className="cs-input" type="date" value={customTo} min={customFrom || undefined} max={dubaiToday()} onChange={(event) => setCustomTo(event.target.value)} /></label></div> : null}<p className="cs-help" role="status">{range === "all" ? `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"}${rangeIncomplete ? " loaded" : ""}` : `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"} ${range === "today" ? "today" : range === "custom" ? (rangeFrom || rangeTo ? `between ${rangeFrom || "the start"} and ${rangeTo || "today"}` : "in the chosen dates") : `in the last ${range} days`}${rangeIncomplete ? ", checking older sessions..." : ""}`}</p></div><div className="cs-history-grid"><div><div className="cs-history-list">{filteredHistory.length ? filteredHistory.map((session) => <button key={session.id} type="button" className={`cs-history-session ${historySessionId === session.id ? "is-selected" : ""}`} onClick={() => { setHistorySessionId(session.id); setGameLimit(50); }} aria-pressed={historySessionId === session.id}><span className="cs-history-date">{dubaiDate(session.session_date, { day: "2-digit", month: "short" })}<small>{dubaiDate(session.session_date, { year: "numeric", month: undefined, day: undefined })}</small></span><span><strong>{session.ended_at ? "Session finished" : "On court"}</strong><small>Games to {session.target_score}</small></span><ChevronRightIcon width={18} height={18} aria-hidden="true" /></button>) : <div className="cs-empty cs-empty-small"><CounterClockwiseClockIcon width={28} height={28} aria-hidden="true" /><h3>{history.length ? "No sessions in this range." : "Your first session is still ahead."}</h3><p>{history.length ? "Try a wider date range." : "Start playing and this becomes the crew’s game archive."}</p></div>}</div>{rangeIncomplete ? <button className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={loadMore}>{busy === "older" ? "Loading..." : "Load older sessions"}<ArrowDownIcon width={16} height={16} aria-hidden="true" /></button> : null}</div><div className="cs-history-detail">{historySessionId ? selectedData ? <><div className="cs-section-heading"><h3>{dubaiDate(selectedData.session.session_date, { year: "numeric" })}</h3><span className="cs-caption">{selectedData.games.length} games</span></div><p className="cs-help">The original score sheet. Corrections update everyone&apos;s stats.</p>{gameList(selectedData)}</> : <div className="cs-loading-sheet" role="status">{!selectedError ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true"><span /><span /></div>) : null}<p>{selectedError ? "Unable to load this score sheet." : "Opening score sheet..."}</p></div> : <div className="cs-empty"><div className="cs-decorative-court cs-court-outline" aria-hidden="true"><span /><span /></div><h3>Every session has a story.</h3><p>Choose a date to see the games or correct a score.</p></div>}</div></div></section>
+          <section hidden={tab !== "history"} aria-label="History"><div className="cs-session-heading"><div><p className="cs-eyebrow">THE GAMES STAY HERE</p><h2>Previously on court.</h2></div><span className="cs-caption">Dates in Dubai time</span></div><div className="cs-history-filter"><div className="cs-segment cs-segment-wrap" role="group" aria-label="Show sessions from">{ranges.map((item) => <button type="button" key={item.id} aria-pressed={range === item.id} onClick={() => setRange(item.id)}>{item.label}</button>)}</div>{range === "custom" ? <div className="cs-inline-form cs-date-range"><label><span className="cs-label">From</span><input className="cs-input" type="date" value={customFrom} max={customTo || dubaiToday()} onChange={(event) => setCustomFrom(event.target.value)} /></label><label><span className="cs-label">To</span><input className="cs-input" type="date" value={customTo} min={customFrom || undefined} max={dubaiToday()} onChange={(event) => setCustomTo(event.target.value)} /></label></div> : null}<p className="cs-help" role="status">{range === "all" ? `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"}${rangeIncomplete ? " loaded" : ""}` : `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"} ${range === "today" ? "today" : range === "custom" ? (rangeFrom || rangeTo ? `between ${rangeFrom || "the start"} and ${rangeTo || "today"}` : "in the chosen dates") : `in the last ${range} days`}${rangeIncomplete ? ", checking older sessions..." : ""}`}</p></div><div className="cs-history-grid"><div><div className="cs-history-list">{filteredHistory.length ? filteredHistory.map((session) => <button key={session.id} type="button" className={`cs-history-session ${historySessionId === session.id ? "is-selected" : ""}`} onClick={() => { setHistorySessionId(session.id); setGameLimit(50); }} aria-pressed={historySessionId === session.id}><span className="cs-history-date">{dubaiDate(session.session_date, { day: "2-digit", month: "short" })}<small>{dubaiDate(session.session_date, { year: "numeric", month: undefined, day: undefined })}</small></span><span><strong>{session.ended_at ? "Session finished" : "On court"}</strong><small>Games to {session.target_score}</small></span><ChevronRightIcon width={18} height={18} aria-hidden="true" /></button>) : <div className="cs-empty cs-empty-small"><CounterClockwiseClockIcon width={28} height={28} aria-hidden="true" /><h3>{history.length ? "No sessions in this range." : "Your first session is still ahead."}</h3><p>{history.length ? "Try a wider date range." : "Start playing and this becomes the crew’s game archive."}</p></div>}</div>{rangeIncomplete ? <button className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={loadMore}>{busy === "older" ? "Loading..." : "Load older sessions"}<ArrowDownIcon width={16} height={16} aria-hidden="true" /></button> : null}</div><div className="cs-history-detail">{historySessionId ? selectedData ? <><div className="cs-section-heading"><h3>{dubaiDate(selectedData.session.session_date, { year: "numeric" })}</h3><span className="cs-caption">{selectedData.games.length} games</span></div><p className="cs-help">The original score sheet. Corrections update everyone&apos;s stats.</p>{gameList(selectedData)}<div className="cs-session-footer"><button type="button" className="cs-text-button cs-danger" disabled={locked || offline} onClick={() => {
+              const id = selectedData.session.id;
+              if (!window.confirm(`Delete this whole session and its ${selectedData.games.length} ${selectedData.games.length === 1 ? "game" : "games"}? Stats will drop them. This cannot be undone.`)) return;
+              void mutate("delete-session", async () => {
+                await deleteSession(id);
+                setHistorySessionId(null);
+                setPlaySessionId((current) => current === id ? null : current);
+                setSessions((current) => { const next = { ...current }; delete next[id]; return next; });
+                setOlderSessions((current) => current.filter((session) => session.id !== id));
+                setWorkspace((current) => current ? { ...current, sessions: current.sessions.filter((session) => session.id !== id) } : current);
+              }, "Session deleted. Stats are refreshing.");
+            }}>{busy === "delete-session" ? "Deleting..." : "Delete this session"}</button><p className="cs-help">Removes the session, its attendance and every game on this sheet.</p></div></> : <div className="cs-loading-sheet" role="status">{!selectedError ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true"><span /><span /></div>) : null}<p>{selectedError ? "Unable to load this score sheet." : "Opening score sheet..."}</p></div> : <div className="cs-empty"><div className="cs-decorative-court cs-court-outline" aria-hidden="true"><span /><span /></div><h3>Every session has a story.</h3><p>Choose a date to see the games or correct a score.</p></div>}</div></div></section>
 
           <section hidden={tab !== "stats"} aria-label="Stats"><div className="cs-session-heading"><div><p className="cs-eyebrow">A LITTLE FRIENDLY COMPETITION</p><h2>The numbers don&apos;t lie.</h2></div><span className="cs-caption">All sessions</span></div><p className="cs-stats-note">Every game counts equally, including mixed 1v2 games. A win belongs to everyone on the winning side.</p>{statsError ? <div className="cs-banner cs-banner-warning" role="alert"><span>Stats may not be up to date. {statsError}</span><button className="cs-text-button" disabled={offline} onClick={() => refresh.current()}>Retry</button></div> : null}{stats === null ? <div className="grid gap-4 py-4" role="status">{!statsError ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true" className="grid h-12 grid-cols-[2fr_repeat(4,1fr)] gap-3 border-b pb-3"><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /></div>) : null}<p className="cs-help">{statsError ? "Stats are unavailable." : "Counting the games..."}</p></div> : !stats.some((player) => player.played > 0) ? <div className="cs-empty"><BarChartIcon width={38} height={38} aria-hidden="true" /><h3>Bragging rights start with game one.</h3><p>Log a game to see wins, win rates and point differences for your players.</p><button className="cs-button cs-button-green" onClick={() => setTab("play")}>Back to the court<ArrowRightIcon width={17} height={17} aria-hidden="true" /></button></div> : <div className="cs-stats-table-wrap"><table className="cs-stats-table"><caption className="cs-sr-only">Player statistics across all sessions. Points difference is points scored minus points conceded.</caption><thead><tr><th scope="col">Player</th><th scope="col">Wins</th><th scope="col">Played</th><th scope="col">Win %</th><th scope="col"><span aria-label="Points difference">Pts +/-</span></th></tr></thead><tbody>{[...stats].sort((a, b) => b.wins - a.wins || b.played - a.played).map((player, index) => {
             const difference = player.points_for - player.points_against;

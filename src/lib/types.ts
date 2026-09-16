@@ -8,6 +8,8 @@ export type GameInput = Omit<Game, "created_by" | "created_at">;
 export type Workspace = {
   players: Player[];
   sessions: Session[];
+  /** Attendance for every open session, so the picker can show who is on each court. */
+  attendance: Record<string, string[]>;
 };
 
 export type SessionData = {

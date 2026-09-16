@@ -8,7 +8,8 @@ const auth = `set request.jwt.claim.sub = '${user}'; set role authenticated;`;
 const sql = (command) => execFileSync("docker", args, { input: auth + command, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }).trim();
 const a = randomUUID();
 const b = randomUUID();
-const session = () => sql(`select public.start_session(array['${a}','${b}']::uuid[]);`);
+const created = [];
+const session = () => { const id = sql(`select public.start_session(array['${a}','${b}']::uuid[]);`); created.push(id); return id; };
 const insert = (id, gameId) => `insert into public.games(id,session_id,side_a_player_1,side_b_player_1,score_a,score_b) values('${gameId}','${id}','${a}','${b}',11,9);`;
 const end = (id) => `update public.sessions set ended_at=now(),created_by=auth.uid() where id='${id}';`;
 
@@ -44,4 +45,5 @@ try {
   console.log("Both insert/end lock orderings passed.");
 } finally {
   sql(`delete from public.players where id in ('${a}','${b}');`);
+  if (created.length) sql(`delete from public.sessions where id in (${created.map((id) => `'${id}'`).join(",")});`);
 }

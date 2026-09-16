@@ -8,5 +8,5 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: identity } = await supabase.auth.getClaims();
   if (!identity?.claims.sub) redirect("/login");
-  return <Courtside />;
+  return <Courtside userId={identity.claims.sub} />;
 }

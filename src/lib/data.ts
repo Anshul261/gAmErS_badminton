@@ -22,7 +22,14 @@ export async function loadWorkspace(): Promise<Workspace> {
   ]);
   fail(players.error);
   fail(sessions.error);
-  return { players: players.data as Player[], sessions: sessions.data as Session[] };
+  const openIds = (sessions.data as Session[]).filter((session) => !session.ended_at).map((session) => session.id);
+  const attendance: Record<string, string[]> = {};
+  if (openIds.length) {
+    const rows = await supabase.from("session_players").select("session_id,player_id").in("session_id", openIds);
+    fail(rows.error);
+    for (const row of rows.data!) (attendance[row.session_id] ??= []).push(row.player_id);
+  }
+  return { players: players.data as Player[], sessions: sessions.data as Session[], attendance };
 }
 
 export async function loadOlderSessions(before: string): Promise<Session[]> {
@@ -88,6 +95,12 @@ export async function endSession(sessionId: string): Promise<void> {
     fail(ended.error);
     if (!ended.data?.ended_at) throw new Error("Couldn't finish the session. Please refresh and try again.");
   }
+}
+
+export async function deleteSession(sessionId: string): Promise<void> {
+  // Cascades to attendance and games, so stats drop the whole session at once.
+  const { error } = await createClient().from("sessions").delete().eq("id", sessionId).select("id").single();
+  fail(error);
 }
 
 export async function saveGame(input: GameInput, original?: Game): Promise<Game> {
