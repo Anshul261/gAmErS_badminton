@@ -8,5 +8,7 @@ export default async function Home() {
   const supabase = await createClient();
   const { data: identity } = await supabase.auth.getClaims();
   if (!identity?.claims.sub) redirect("/login");
-  return <Courtside userId={identity.claims.sub} />;
+  const email = typeof identity.claims.email === "string" ? identity.claims.email : "";
+  const defaultName = email.split("@")[0].replace(/[._-]+/g, " ").trim() || "Friend";
+  return <Courtside userId={identity.claims.sub} defaultName={defaultName} />;
 }

@@ -26,3 +26,17 @@ export function dubaiToday(daysAgo = 0) {
   const now = new Date(Date.now() - daysAgo * 86400000);
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dubai", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
+
+export function mapLabel(url: string) {
+  try {
+    const host = new URL(url).hostname;
+    if (host.includes("waze")) return "Waze";
+    if (host.includes("google") || host === "goo.gl" || host.endsWith("maps.app.goo.gl")) return "Google Maps";
+    return "Map";
+  } catch { return "Map"; }
+}
+
+/** "19:30:00" from Postgres becomes "19:30". */
+export function shortTime(time: string | null) {
+  return time ? time.slice(0, 5) : "";
+}

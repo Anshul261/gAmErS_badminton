@@ -10,6 +10,8 @@ export type Workspace = {
   sessions: Session[];
   /** Attendance for every loaded session, so lists can show who was on court. */
   attendance: Record<string, string[]>;
+  /** Account display names by user id, for "logged by" tags. */
+  profiles: Record<string, string>;
 };
 
 export type SessionData = {

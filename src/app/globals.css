@@ -310,10 +310,24 @@
 .cs-court-list .cs-help { @apply mt-3; }
 .cs-session-edit { @apply mb-5 rounded border bg-card px-4 py-3; }
 .cs-session-edit summary { @apply cursor-pointer text-sm font-semibold; }
-.cs-session-edit form { @apply mt-3 grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end; }
 .cs-session-edit label { @apply grid gap-1.5; }
 .cs-session-edit .cs-input { @apply min-h-11; }
 .cs-faq { @apply grid gap-2; }
 .cs-faq details { @apply rounded border bg-card px-4 py-3; }
 .cs-faq summary { @apply cursor-pointer text-[15px] font-semibold; }
 .cs-faq p { @apply mt-2 text-sm leading-relaxed text-muted-foreground; }
+.cs-logged-by { @apply rounded-xs bg-muted px-1.5 py-0.5 normal-case tracking-normal; }
+.cs-logged-by.is-mine { @apply bg-accent text-primary; }
+.cs-you-card { @apply mb-6 border-b border-primary/15 pb-6; }
+.cs-you-card .cs-inline-form { @apply mt-2; }
+.cs-you-card .cs-help { @apply mt-3; }
+.cs-venue { @apply -mt-1 mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm; }
+.cs-venue a { @apply inline-flex items-center gap-1 font-semibold text-primary underline underline-offset-4; }
+.cs-whos-here { @apply grid gap-3; }
+.cs-setup-when { @apply mt-6; }
+.cs-when-grid { @apply grid gap-3 sm:grid-cols-2; }
+.cs-when-grid label { @apply grid gap-1.5; }
+.cs-when-grid .cs-label em { @apply font-normal not-italic text-muted-foreground; }
+.cs-when-grid .cs-input { @apply min-h-11; }
+.cs-session-edit form { @apply mt-3 grid gap-3 sm:grid-cols-2; }
+.cs-session-edit form > button { @apply sm:col-span-2 sm:justify-self-start; }

@@ -1,10 +1,10 @@
 # Database security
 
-The schema lives in `supabase/migrations/`. It creates four public tables (`players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. There are no `SECURITY DEFINER` functions.
+The schema lives in `supabase/migrations/`. It creates five public tables (`profiles`, `players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. There are no `SECURITY DEFINER` functions.
 
 ## Access model
 
-There is one court. Every `authenticated` account can read and write all four tables; `anon` has no table or RPC privileges. The only gate is Supabase Auth: whoever can create an account is on the court. Keep the address private, and once your friends have accounts, close sign-ups:
+There is one court. Every `authenticated` account can read and write the four court tables; `profiles` is readable by everyone but each account may insert or update only its own row, and nobody can delete one. `anon` has no table or RPC privileges. The only gate is Supabase Auth: whoever can create an account is on the court. Keep the address private, and once your friends have accounts, close sign-ups:
 
 ```sh
 SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https://your-app.vercel.app -- --close-signups
@@ -18,10 +18,10 @@ Every insert and update policy checks `created_by = auth.uid()`. On updates, sen
 
 | RPC | Arguments | Return |
 | --- | --- | --- |
-| `start_session` | `attendees uuid[]`, `points smallint DEFAULT 11` | Session UUID |
+| `start_session` | `attendees uuid[] DEFAULT '{}'`, `points smallint DEFAULT 11`, `on_date date`, `at_time time`, `venue text`, `map_url text` | Session UUID |
 | `player_stats` | none | Per-player game, win, and point totals |
 
-`start_session` atomically inserts the session and its attendance. It rejects fewer than two attendees, duplicate UUIDs, and null entries; unknown players fail the foreign key and roll back the whole call. Any number of sessions may be open at once (several courts), and a player may be on more than one.
+`start_session` atomically inserts the session and its attendance. Attendees may be empty (a planned session); duplicate UUIDs and null entries are rejected, and unknown players fail the foreign key and roll back the whole call. Blank place and link values are stored as null. Any number of sessions may be open at once (several courts), and a player may be on more than one.
 
 ## Column contract
 
@@ -30,11 +30,12 @@ All UUID audit columns are deliberately independent of `auth.users`, so the SQL 
 | Table | Columns |
 | --- | --- |
 | `players` | `id uuid`, `display_name text`, `archived boolean`, `created_by uuid`, `created_at timestamptz` |
-| `sessions` | `id uuid`, `session_date date`, `target_score smallint`, `ended_at timestamptz`, `created_by uuid`, `created_at timestamptz` |
+| `profiles` | `user_id uuid`, `display_name text`, `created_at timestamptz` |
+| `sessions` | `id uuid`, `session_date date`, `start_time time`, `venue_name text`, `venue_url text`, `target_score smallint`, `ended_at timestamptz`, `created_by uuid`, `created_at timestamptz` |
 | `session_players` | `session_id uuid`, `player_id uuid`, `created_by uuid`, `created_at timestamptz` |
 | `games` | `id uuid`, `session_id uuid`, `target_score smallint`, `side_a_player_1 uuid`, `side_a_player_2 uuid`, `side_b_player_1 uuid`, `side_b_player_2 uuid`, `score_a smallint`, `score_b smallint`, `created_by uuid`, `created_at timestamptz` |
 
-Only `sessions.ended_at`, `games.side_a_player_2`, and `games.side_b_player_2` are nullable. `created_by` defaults to `auth.uid()` and `created_at` to `now()`. Game IDs have no default: generate the UUID on the client and reuse it for retries. A repeated insert with the same ID raises `23505`, not a second game.
+Only `sessions.ended_at`, `sessions.start_time`, `sessions.venue_name`, `sessions.venue_url`, `games.side_a_player_2`, and `games.side_b_player_2` are nullable. `venue_url` must start with `https://` (at most 500 characters), so a stored link can never be a `javascript:` or other non-web URL; the app renders it with `rel="noopener noreferrer"`. Profile and venue names are 1-32 and 1-80 characters and may not be blank. `created_by` defaults to `auth.uid()` and `created_at` to `now()`. Game IDs have no default: generate the UUID on the client and reuse it for retries. A repeated insert with the same ID raises `23505`, not a second game.
 
 Player names have 1-32 characters, are unique case-insensitively across the court (including archived players), and may not be blank. Archiving hides a player from new sessions but keeps attendance and results. Every game player has a composite foreign key to that game's session attendance; no player may appear twice in a game. Session dates default to the current date in `Asia/Dubai`. Targets accept only 11 or 21. A winner must reach the target with the loser at most two behind, or exceed the target leading by exactly two.
 

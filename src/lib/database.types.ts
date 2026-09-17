@@ -136,6 +136,24 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       session_players: {
         Row: {
           created_at: string
@@ -179,7 +197,10 @@ export type Database = {
           ended_at: string | null
           id: string
           session_date: string
+          start_time: string | null
           target_score: number
+          venue_name: string | null
+          venue_url: string | null
         }
         Insert: {
           created_at?: string
@@ -187,7 +208,10 @@ export type Database = {
           ended_at?: string | null
           id?: string
           session_date?: string
+          start_time?: string | null
           target_score?: number
+          venue_name?: string | null
+          venue_url?: string | null
         }
         Update: {
           created_at?: string
@@ -195,7 +219,10 @@ export type Database = {
           ended_at?: string | null
           id?: string
           session_date?: string
+          start_time?: string | null
           target_score?: number
+          venue_name?: string | null
+          venue_url?: string | null
         }
         Relationships: []
       }
@@ -215,7 +242,14 @@ export type Database = {
         }[]
       }
       start_session: {
-        Args: { attendees: string[]; points?: number }
+        Args: {
+          at_time?: string
+          attendees?: string[]
+          map_url?: string
+          on_date?: string
+          points?: number
+          venue?: string
+        }
         Returns: string
       }
     }

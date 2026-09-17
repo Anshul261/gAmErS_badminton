@@ -26,8 +26,8 @@ declare
   t record;
 begin
   if (select count(*) from pg_catalog.pg_class as c join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
-      where n.nspname = 'public' and c.relkind in ('r', 'p')) <> 4 then
-    raise exception 'Expected four public tables';
+      where n.nspname = 'public' and c.relkind in ('r', 'p')) <> 5 then
+    raise exception 'Expected five public tables';
   end if;
   for t in select c.oid, c.relname, c.relrowsecurity from pg_catalog.pg_class as c
     join pg_catalog.pg_namespace as n on n.oid = c.relnamespace
@@ -78,10 +78,10 @@ do $$
 declare
   table_name text;
 begin
-  foreach table_name in array array['players', 'sessions', 'session_players', 'games'] loop
+  foreach table_name in array array['profiles', 'players', 'sessions', 'session_players', 'games'] loop
     perform pg_temp.expect_error(format('select * from public.%I', table_name), '42501');
     perform pg_temp.expect_error(format('insert into public.%I default values', table_name), '42501');
-    perform pg_temp.expect_error(format('update public.%I set created_by = null', table_name), '42501');
+    perform pg_temp.expect_error(format('update public.%I set created_at = null', table_name), '42501');
     perform pg_temp.expect_error(format('delete from public.%I', table_name), '42501');
   end loop;
   perform pg_temp.expect_error('select public.start_session(null)', '42501');
@@ -116,6 +116,14 @@ begin
   perform pg_temp.expect_error('insert into public.players (display_name) values (''nobody'')', '42501');
 
   perform pg_catalog.set_config('request.jwt.claim.sub', owner_id::text, true);
+  -- A profile is the account's own row only, readable by every friend, never deletable through the API.
+  insert into public.profiles (display_name) values ('Owner');
+  if not exists (select 1 from public.profiles where user_id = owner_id and display_name = 'Owner') then
+    raise exception 'Profile defaults failed';
+  end if;
+  perform pg_temp.expect_error(format('insert into public.profiles (user_id, display_name) values (%L, ''Spoof'')', friend_id), '42501');
+  perform pg_temp.expect_error('insert into public.profiles (display_name) values (''   '')', '23514');
+  perform pg_temp.expect_error('delete from public.profiles', '42501');
   insert into public.players (id, display_name) values
     (p1, 'Asha'), (p2, 'Ben'), (p3, 'Chen'), (p4, 'Devi'), (p5, 'Eli');
   if not exists (select 1 from public.players where id = p1 and created_by = owner_id and not archived) then
@@ -124,12 +132,23 @@ begin
   perform pg_temp.expect_error('insert into public.players (display_name) values (''ASHA'')', '23505');
   perform pg_temp.expect_error('insert into public.players (display_name) values (''   '')', '23514');
   perform pg_temp.expect_error('insert into public.players (display_name) values (repeat(''x'', 33))', '23514');
-  perform pg_temp.expect_error(format('select public.start_session(array[%L]::uuid[])', p1), '22023');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[])', p1, p1), '22023');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,null]::uuid[])', p1), '22023');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[], 15::smallint)', p1, p2), '23514');
   perform pg_temp.expect_error(format('select public.start_session(array[%L,%L]::uuid[])', p1, ghost), '23503');
   if exists (select 1 from public.sessions where created_by = owner_id) then raise exception 'Failed start_session left partial data'; end if;
+  -- A planned session: no attendees yet, a date ahead, a place and an https map link.
+  other_sid := public.start_session('{}', 21::smallint, date '2030-01-01', time '19:30', '  Al Nasr  ', 'https://waze.com/ul/hsomewhere');
+  if not exists (select 1 from public.sessions where id = other_sid and session_date = date '2030-01-01'
+      and start_time = time '19:30' and venue_name = 'Al Nasr' and venue_url = 'https://waze.com/ul/hsomewhere' and target_score = 21)
+    or exists (select 1 from public.session_players where session_id = other_sid) then
+    raise exception 'Planned session details were not stored';
+  end if;
+  perform pg_temp.expect_error(format('update public.sessions set venue_url = ''http://insecure'', created_by = %L where id = %L', owner_id, other_sid), '23514');
+  perform pg_temp.expect_error(format('update public.sessions set venue_url = ''javascript:alert(1)'', created_by = %L where id = %L', owner_id, other_sid), '23514');
+  perform pg_temp.expect_error(format('update public.sessions set venue_name = ''   '', created_by = %L where id = %L', owner_id, other_sid), '23514');
+  perform pg_temp.expect_error('select public.start_session(''{}'', 11::smallint, null, null, null, ''ftp://x'')', '23514');
+  delete from public.sessions where id = other_sid;
   sid := public.start_session(array[p1,p2,p3,p4]);
   if (select count(*) from public.session_players where session_id = sid) <> 4
     or not exists (select 1 from public.sessions where id = sid and target_score = 11 and created_by = owner_id
@@ -197,6 +216,17 @@ begin
 
   -- Any other signed-in friend shares the court and can correct anything, attributed to them.
   perform pg_catalog.set_config('request.jwt.claim.sub', friend_id::text, true);
+  if not exists (select 1 from public.profiles where user_id = owner_id and display_name = 'Owner') then
+    raise exception 'Friend cannot read other names';
+  end if;
+  update public.profiles set display_name = 'Renamed' where user_id = owner_id;
+  get diagnostics row_count = row_count;
+  if row_count <> 0 then raise exception 'Friend renamed another account'; end if;
+  insert into public.profiles (display_name) values ('Friend');
+  perform pg_temp.expect_error(format('update public.profiles set user_id = %L where user_id = %L', owner_id, friend_id), '23514');
+  update public.profiles set display_name = 'Friend 2' where user_id = friend_id;
+  get diagnostics row_count = row_count;
+  if row_count <> 1 then raise exception 'Own rename failed'; end if;
   if (select count(*) from public.players where created_by = owner_id) <> 5 or (select count(*) from public.games where session_id = sid) <> 11 then
     raise exception 'Friend cannot read shared data';
   end if;

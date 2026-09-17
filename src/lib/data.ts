@@ -16,13 +16,34 @@ function fail(error: { message: string; code?: string } | null) {
 
 export async function loadWorkspace(): Promise<Workspace> {
   const supabase = createClient();
-  const [players, sessions] = await Promise.all([
+  const [players, sessions, profiles] = await Promise.all([
     supabase.from("players").select("*").order("display_name"),
     supabase.from("sessions").select("*").order("created_at", { ascending: false }).limit(50),
+    supabase.from("profiles").select("user_id,display_name"),
   ]);
   fail(players.error);
   fail(sessions.error);
-  return { players: players.data as Player[], sessions: sessions.data as Session[], attendance: await loadAttendance(sessions.data as Session[]) };
+  fail(profiles.error);
+  return {
+    players: players.data as Player[],
+    sessions: sessions.data as Session[],
+    attendance: await loadAttendance(sessions.data as Session[]),
+    profiles: Object.fromEntries(profiles.data!.map((row) => [row.user_id, row.display_name])),
+  };
+}
+
+export async function ensureProfile(name: string): Promise<void> {
+  const user_id = await author();
+  // First sign-in: claim a default name without overwriting one chosen earlier.
+  const { error } = await createClient().from("profiles").upsert({ user_id, display_name: name.trim().slice(0, 32) || "Friend" }, { onConflict: "user_id", ignoreDuplicates: true });
+  fail(error);
+}
+
+export async function updateProfile(name: string): Promise<string> {
+  const user_id = await author();
+  const { data, error } = await createClient().from("profiles").update({ display_name: name.trim() }).eq("user_id", user_id).select("display_name").single();
+  fail(error);
+  return data!.display_name;
 }
 
 async function loadAttendance(sessions: Session[]): Promise<Record<string, string[]>> {
@@ -74,8 +95,13 @@ export async function archivePlayer(playerId: string): Promise<void> {
   if (!data) throw new Error("Player no longer exists.");
 }
 
-export async function startSession(playerIds: string[], target: number): Promise<string> {
-  const { data, error } = await createClient().rpc("start_session", { attendees: playerIds, points: target });
+export type SessionPlan = { attendees: string[]; target: number; date: string; time: string; venue: string; mapUrl: string };
+
+export async function startSession(plan: SessionPlan): Promise<string> {
+  const { data, error } = await createClient().rpc("start_session", {
+    attendees: plan.attendees, points: plan.target, on_date: plan.date,
+    at_time: plan.time || undefined, venue: plan.venue.trim() || undefined, map_url: plan.mapUrl.trim() || undefined,
+  });
   fail(error);
   return data!;
 }
@@ -106,7 +132,9 @@ export async function reopenSession(sessionId: string): Promise<void> {
   if (!data) throw new Error("This session no longer exists.");
 }
 
-export async function updateSession(sessionId: string, changes: { session_date: string; target_score: number }): Promise<Session> {
+export type SessionChanges = Pick<Session, "session_date" | "target_score" | "start_time" | "venue_name" | "venue_url">;
+
+export async function updateSession(sessionId: string, changes: SessionChanges): Promise<Session> {
   const created_by = await author();
   const { data, error } = await createClient().from("sessions").update({ ...changes, created_by }).eq("id", sessionId).select().maybeSingle();
   fail(error);

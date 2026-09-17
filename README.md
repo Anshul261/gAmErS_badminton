@@ -6,7 +6,8 @@ The badminton scorebook for one crew. Next.js, TypeScript, Tailwind, shadcn/ui, 
 
 - One court, no groups. Anyone who creates an account is in. Share the address only with friends, then close sign-ups (see below).
 - Players are names on the score sheet, not accounts. Add them in **People**.
-- Start a session with the people playing, log 1v1 / 1v2 / 2v2 games to 11 or 21 (win by two), add late arrivals, finish the session. Several courts can run at once; each phone picks which session it logs for.
+- Start a session with the people playing, or plan one ahead with a date, time, place and a Google Maps / Waze link; people tap themselves in when they arrive. Log 1v1 / 1v2 / 2v2 games to 11 or 21 (win by two), add late arrivals, finish the session. Several courts can run at once; each phone picks which session it logs for.
+- Every game is tagged with who logged it. Set your name under People; it defaults to the first part of your email.
 - Other phones update every few seconds. Scores can be corrected or deleted from the session or from **History**; there a session can also be reopened for a forgotten game, have its date or target edited, or be deleted outright. **Stats** recalculates.
 - **FAQ** tab explains all of this in plain terms.
 
