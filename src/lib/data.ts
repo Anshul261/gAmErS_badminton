@@ -64,12 +64,16 @@ export async function loadOlderSessions(before: string): Promise<{ sessions: Ses
 
 export async function loadSession(sessionId: string): Promise<SessionData> {
   const supabase = createClient();
-  const [session, attendance] = await Promise.all([
+  const [session, attendance, valueRows] = await Promise.all([
     supabase.from("sessions").select("*").eq("id", sessionId).single(),
     supabase.from("session_players").select("player_id").eq("session_id", sessionId),
+    supabase.rpc("session_game_values", { sid: sessionId }),
   ]);
   fail(session.error);
   fail(attendance.error);
+  fail(valueRows.error);
+  const values: Record<string, Record<string, number>> = {};
+  for (const row of valueRows.data!) (values[row.game_id] ??= {})[row.player_id] = Number(row.value);
   const games: Game[] = [];
   for (let offset = 0; ; offset += 1000) {
     const { data, error } = await supabase.from("games").select("*").eq("session_id", sessionId)
@@ -78,7 +82,7 @@ export async function loadSession(sessionId: string): Promise<SessionData> {
     games.push(...data as Game[]);
     if (data!.length < 1000) break;
   }
-  return { session: session.data as Session, playerIds: attendance.data!.map((row) => row.player_id), games };
+  return { session: session.data as Session, playerIds: attendance.data!.map((row) => row.player_id), games, values };
 }
 
 export async function addPlayer(name: string): Promise<Player> {
@@ -182,5 +186,5 @@ export async function deleteGame(id: string): Promise<void> {
 export async function loadStats(): Promise<PlayerStats[]> {
   const { data, error } = await createClient().rpc("player_stats");
   fail(error);
-  return data!;
+  return data!.map((row) => ({ ...row, score: Number(row.score) }));
 }

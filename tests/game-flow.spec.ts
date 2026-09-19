@@ -109,6 +109,7 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await expect(page.getByText("1 game logged", { exact: true })).toBeVisible();
     await expect(gameForm.getByLabel("Side A", { exact: true })).toHaveValue("");
     await expect(page.getByText("by you", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Play", exact: true }).getByTitle("Leaderboard score for this game").first()).toHaveText(/^\+1\.[0-9]$/);
     await expect(other.getByText("1 game logged", { exact: true })).toBeVisible({ timeout: 20000 });
     await expect(other.getByText(`by ${scorer}`, { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -146,8 +147,13 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await expect(page.getByRole("region", { name: "History", exact: true }).getByRole("button", { name: "Edit game 1", exact: true })).toBeVisible();
     await nav.getByRole("button", { name: "Stats", exact: true }).click();
     const table = page.getByRole("table");
+    // Riya beat Sam + Jay solo (a 1v2), then Riya/Sam beat Jay 2v1... Score ranks Riya first with the solo bonus.
     await expect(table.getByRole("row").filter({ hasText: riya })).toContainText("100%");
     await expect(table.getByRole("row").filter({ hasText: sam })).toContainText("0%");
+    await expect(table.getByRole("columnheader", { name: "Score" })).toBeVisible();
+    // Riya's solo 1v2 win is worth more than an even game; Sam and Jay each lost one as the pair.
+    await expect(table.getByRole("row").filter({ hasText: riya })).toContainText(/\+1\.[0-9]/);
+    await expect(table.getByRole("row").filter({ hasText: sam })).toContainText(/-1\.0/);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     // Finish the spare court so it does not linger for the next run.
     await nav.getByRole("button", { name: "Play", exact: true }).click();

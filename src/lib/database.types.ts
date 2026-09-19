@@ -231,14 +231,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      game_values: {
+        Args: never
+        Returns: {
+          game_id: string
+          player_id: string
+          value: number
+        }[]
+      }
       player_stats: {
         Args: never
         Returns: {
+          doubles: number
+          losses: number
+          pair: number
           played: number
           player_id: string
           points_against: number
           points_for: number
+          score: number
+          singles: number
+          solo: number
           wins: number
+        }[]
+      }
+      session_game_values: {
+        Args: { sid: string }
+        Returns: {
+          game_id: string
+          player_id: string
+          value: number
         }[]
       }
       start_session: {

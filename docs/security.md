@@ -19,9 +19,15 @@ Every insert and update policy checks `created_by = auth.uid()`. On updates, sen
 | RPC | Arguments | Return |
 | --- | --- | --- |
 | `start_session` | `attendees uuid[] DEFAULT '{}'`, `points smallint DEFAULT 11`, `on_date date`, `at_time time`, `venue text`, `map_url text` | Session UUID |
-| `player_stats` | none | Per-player game, win, and point totals |
+| `player_stats` | none | Per-player wins, losses, format counts (1v1, 1v2 solo, 1v2 pair, 2v2), point totals, and Score |
+| `game_values` | none | Score value of every game for every player, computed in play order |
+| `session_game_values` | `sid uuid` | The same values for one session's games |
 
 `start_session` atomically inserts the session and its attendance. Attendees may be empty (a planned session); duplicate UUIDs and null entries are rejected, and unknown players fail the foreign key and roll back the whole call. Blank place and link values are stored as null. Any number of sessions may be open at once (several courts), and a player may be on more than one.
+
+## Leaderboard score
+
+`game_values()` walks every game in play order and prices it Elo-style: each side's strength is the average running score of its players, the expected result comes from the strength gap (`scale` = 10 points for a ~91% favourite), and each player on a side receives `2 × (result − expected)`, so an even game is worth ±1 and an upset up to ±2. In a 1v2 the pair is priced like any game; the solo player's expectation is computed as if the opponents were `solo_handicap` (2.7) points stronger, so a solo win is worth about +1.3 and a solo loss about −0.7. Margin of victory is ignored. Both knobs are constants at the top of the function. `player_stats()` sums these values into `score` and adds format counts; the client ranks by score, then win %, then points difference. The functions are read-only, `SECURITY INVOKER`, and run under the caller's RLS.
 
 ## Column contract
 

@@ -86,6 +86,8 @@ begin
   end loop;
   perform pg_temp.expect_error('select public.start_session(null)', '42501');
   perform pg_temp.expect_error('select * from public.player_stats()', '42501');
+  perform pg_temp.expect_error('select * from public.game_values()', '42501');
+  perform pg_temp.expect_error('select * from public.session_game_values(null)', '42501');
 end;
 $$;
 
@@ -231,6 +233,33 @@ begin
     raise exception 'Friend cannot read shared data';
   end if;
   if (select count(*) from public.player_stats() where player_id in (p1, p2, p3, p4)) <> 4 then raise exception 'Friend stats are incomplete'; end if;
+  -- Score: an even game is +1 / -1; a solo 1v2 win is worth more than a pair loss costs; formats are counted.
+  declare
+    first_game uuid;
+    solo_game uuid;
+    solo_value numeric;
+    pair_value numeric;
+    st record;
+  begin
+    select id into first_game from public.games where session_id = sid order by created_at, id limit 1;
+    if (select v.value from public.game_values() v where v.game_id = first_game and v.player_id = p1) not in (1, -1) then
+      raise exception 'First game between unknown sides should be worth exactly one point';
+    end if;
+    insert into public.games (id,session_id,side_a_player_1,side_b_player_1,side_b_player_2,score_a,score_b)
+      values (pg_catalog.gen_random_uuid(),sid,p3,p1,p2,11,9) returning id into solo_game;
+    select v.value into solo_value from public.game_values() v where v.game_id = solo_game and v.player_id = p3;
+    select v.value into pair_value from public.game_values() v where v.game_id = solo_game and v.player_id = p1;
+    if solo_value <= 1 or solo_value > 2 then raise exception 'Solo 1v2 win should be worth more than an even win, got %', solo_value; end if;
+    if pair_value > -0.5 or pair_value < -2 then raise exception 'Pair loss should cost like a normal loss, got %', pair_value; end if;
+    select * into st from public.player_stats() where player_id = p3;
+    if st.solo <> 1 or st.pair <> 0 or st.singles <> 0 or st.doubles <> 1 or st.wins <> 1 or st.losses <> 1 then
+      raise exception 'Format counts are wrong: %', st;
+    end if;
+    if (select count(*) from public.session_game_values(sid)) <> (select count(*) from public.game_values() v join public.games g on g.id = v.game_id where g.session_id = sid) then
+      raise exception 'session_game_values does not match the full pass';
+    end if;
+    delete from public.games where id = solo_game;
+  end;
   perform pg_temp.expect_error(format('update public.players set display_name = ''Asha corrected'' where id = %L', p1), '42501');
   update public.players set display_name = 'Asha corrected', created_by = friend_id where id = p1;
   get diagnostics row_count = row_count;

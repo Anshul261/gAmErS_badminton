@@ -33,8 +33,14 @@ test("the public Data API keeps anonymous users out and enforces scores", async 
     expect((await friend.client.from("games").insert(game)).error).toBeNull();
     const stats = await friend.client.rpc("player_stats");
     expect(stats.error).toBeNull();
-    expect(stats.data.find((row: { player_id: string }) => row.player_id === ids[0])).toMatchObject({ played: 1, wins: 1, points_for: 13, points_against: 11 });
+    expect(stats.data.find((row: { player_id: string }) => row.player_id === ids[0])).toMatchObject({ played: 1, wins: 1, losses: 0, solo: 1, pair: 0, points_for: 13, points_against: 11 });
+    // A solo 1v2 win against unknown opponents is worth more than an even win.
+    expect(Number(stats.data.find((row: { player_id: string }) => row.player_id === ids[0]).score)).toBeGreaterThan(1);
+    const values = await friend.client.rpc("session_game_values", { sid: session.data });
+    expect(values.error).toBeNull();
+    expect(values.data).toHaveLength(3);
     expect((await anonymous.rpc("player_stats")).error).not.toBeNull();
+    expect((await anonymous.rpc("game_values")).error).not.toBeNull();
     expect((await anonymous.rpc("start_session", { attendees: ids, points: 11 })).error).not.toBeNull();
     for (const table of ["players", "sessions", "session_players", "games"]) {
       const unauthenticated = await anonymous.from(table).select("*");
