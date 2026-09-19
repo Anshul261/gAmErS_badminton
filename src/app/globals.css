@@ -237,7 +237,8 @@
 .cs-stats-table-wrap { @apply w-full overflow-x-auto; }
 .cs-stats-table { @apply w-full table-fixed border-collapse tabular-nums; }
 .cs-stats-table thead th { @apply border-b-2 border-input px-1 py-3 text-right text-[9px] font-medium whitespace-nowrap text-muted-foreground md:px-3 md:text-[11px]; }
-.cs-stats-table thead th:first-child { @apply w-[26%] pl-2 text-left md:w-[34%] md:pl-3; }
+.cs-stats-table thead th:first-child { @apply w-[40%] pl-2 text-left align-bottom md:w-[46%] md:pl-3; }
+.cs-stats-table thead th { @apply align-bottom; }
 .cs-stats-table tbody td { @apply border-b px-0.5 py-4 text-right font-mono text-[12px] whitespace-nowrap md:px-3 md:py-5 md:text-base; }
 .cs-stats-table tbody th { @apply border-b px-2 py-4 text-left text-xs font-medium wrap-anywhere md:px-3 md:py-5 md:text-sm; }
 .cs-stats-table tbody th > span { @apply inline; }
@@ -333,8 +334,13 @@
 .cs-session-edit form > button { @apply sm:col-span-2 sm:justify-self-start; }
 .cs-stats-table .cs-stat-score { @apply font-semibold; }
 .cs-stats-table .cs-dim { @apply mx-px text-muted-foreground; }
-.cs-stats-table .cs-formats { @apply text-[11px] md:text-sm; }
 .cs-stats-table thead th abbr { @apply no-underline; }
-.cs-game-value { @apply ml-2 inline-block rounded-xs bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground; }
-.cs-game-value.is-gain { @apply bg-accent text-primary; }
-.cs-stats-table thead th.cs-formats-head { @apply pr-2 text-[8px] tracking-tight md:text-[11px] md:tracking-normal; }
+.cs-th { @apply inline-flex flex-col items-end gap-1 md:flex-row md:items-center; }
+.cs-th-help { @apply inline-flex size-4 items-center justify-center rounded-full border border-input font-sans text-[9px] leading-none font-semibold text-muted-foreground md:size-[18px] md:text-[10px]; }
+.cs-th-help[aria-expanded="true"] { @apply border-primary bg-primary text-primary-foreground; }
+.cs-formats-line { @apply mt-1 block font-mono text-[10px] font-normal text-muted-foreground md:text-[11px]; }
+.cs-legend { @apply mt-4 rounded border bg-card px-4 py-3; }
+.cs-legend h3 { @apply text-base; }
+.cs-legend p { @apply text-sm leading-relaxed; }
+.cs-legend .cs-help { @apply mt-2; }
+.cs-stats-note .cs-th-help { @apply mx-0.5 align-middle; }
