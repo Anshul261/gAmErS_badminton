@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Game, GameInput, Player, PlayerStats, Session, SessionData, Workspace } from "./types";
+import type { Game, GameInput, Player, PlayerStats, Session, SessionData, StatGame, Workspace } from "./types";
 
 async function author() {
   const { data, error } = await createClient().auth.getClaims();
@@ -183,4 +183,18 @@ export async function loadStats(): Promise<PlayerStats[]> {
   const { data, error } = await createClient().rpc("player_stats");
   fail(error);
   return data!.map((row) => ({ ...row, score: Number(row.score) }));
+}
+
+export async function loadAllGames(): Promise<StatGame[]> {
+  const supabase = createClient();
+  const games: StatGame[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase.from("games")
+      .select("id,created_at,session_id,score_a,score_b,target_score,side_a_player_1,side_a_player_2,side_b_player_1,side_b_player_2,sessions!games_session_id_fkey(session_date)")
+      .order("created_at", { ascending: true }).order("id").range(offset, offset + 999);
+    fail(error);
+    games.push(...data!.map(({ sessions, ...game }) => ({ ...game, session_date: sessions.session_date })));
+    if (data!.length < 1000) break;
+  }
+  return games;
 }

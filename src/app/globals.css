@@ -344,3 +344,53 @@
 .cs-legend p { @apply text-sm leading-relaxed; }
 .cs-legend .cs-help { @apply mt-2; }
 .cs-stats-note .cs-th-help { @apply mx-0.5 align-middle; }
+
+/* Player cards: a full-height sheet on phones, a centred panel from tablet up. */
+.cs-player-link { @apply -my-1 inline min-h-0 cursor-pointer rounded-sm bg-transparent p-0 py-1 text-left font-[inherit] text-inherit underline decoration-input decoration-dotted underline-offset-4 hover:decoration-current; }
+.cs-roster .cs-player-link { @apply py-3; }
+.cs-mini-form { @apply mt-1.5 flex gap-1; }
+.cs-mini-form b, .cs-pd-axis b { @apply inline-block size-2 rounded-full; }
+:is(.cs-mini-form, .cs-pd-axis) b.is-win { @apply bg-primary; }
+:is(.cs-mini-form, .cs-pd-axis) b.is-loss { @apply bg-destructive/70; }
+.cs-player-dialog { @apply top-auto bottom-0 max-h-[92svh] w-full max-w-full translate-y-0 rounded-t-2xl rounded-b-none px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:top-1/2 md:bottom-auto md:max-h-[calc(100svh-4rem)] md:max-w-[560px] md:-translate-y-1/2 md:rounded-lg md:p-6; }
+.cs-player-dialog [data-slot="dialog-header"] { @apply gap-1 text-left; }
+.cs-pd { @apply grid gap-4; }
+.cs-pd-form { @apply flex flex-wrap items-center gap-1; }
+.cs-pd-form > span { @apply inline-flex size-6 items-center justify-center rounded font-mono text-[10px] font-semibold; }
+.cs-pd-form > span.is-win { @apply bg-primary text-primary-foreground; }
+.cs-pd-form > span.is-loss { @apply border border-destructive/40 text-destructive; }
+.cs-pd-form small { @apply ml-1 text-xs text-muted-foreground; }
+.cs-pd-tiles { @apply m-0 grid grid-cols-2 gap-2 md:grid-cols-4; }
+.cs-pd-tiles > div { @apply rounded-lg border bg-background px-3 py-3; }
+.cs-pd-tiles dt { @apply text-[10px] font-semibold tracking-[.12em] text-muted-foreground uppercase; }
+.cs-pd-tiles dd { @apply m-0 mt-1 font-mono text-2xl font-semibold tabular-nums; }
+.cs-pd-card { @apply rounded-lg border bg-background px-3 py-3 md:px-4; }
+.cs-pd-card .cs-section-heading { @apply mb-1; }
+.cs-pd-card h3 { @apply text-base font-semibold; }
+.cs-pd-delta { @apply font-mono text-xs font-semibold tabular-nums; }
+.cs-pd-chart { @apply mt-3 flex h-36 items-stretch gap-[2px]; }
+.cs-pd-bar { @apply flex min-w-0 flex-1 flex-col; }
+.cs-pd-bar > span { @apply flex flex-1 px-[1px]; }
+.cs-pd-up { @apply items-end border-b border-input; }
+.cs-pd-down { @apply items-start; }
+.cs-pd-bar i { @apply block w-full max-w-7 mx-auto; }
+.cs-pd-up i { @apply rounded-t bg-primary; }
+.cs-pd-down i { @apply rounded-b bg-destructive/70; }
+.cs-pd-axis { @apply mt-2 flex items-center justify-between gap-2 font-mono text-[10px] text-muted-foreground; }
+.cs-pd-axis > span:nth-child(2) { @apply flex items-center gap-1 font-sans; }
+.cs-pd-best { @apply flex flex-col gap-0.5 border-primary/30 bg-accent/60; }
+.cs-pd-best strong { @apply text-xl font-semibold; }
+.cs-pd-best span { @apply text-sm text-muted-foreground; }
+.cs-pd-list { @apply m-0 list-none p-0; }
+.cs-pd-list li + li { @apply border-t; }
+.cs-pd-list button { @apply flex min-h-12 w-full items-center gap-3 bg-transparent py-2 text-left text-sm; }
+.cs-pd-rank { @apply inline-flex size-6 shrink-0 items-center justify-center rounded bg-muted font-mono text-[11px]; }
+.cs-pd-name { @apply min-w-0 flex-1 font-medium wrap-anywhere; }
+.cs-pd-name small { @apply block font-mono text-[11px] font-normal text-muted-foreground; }
+.cs-pd-list svg { @apply shrink-0 text-muted-foreground; }
+.cs-pd-h2h { @apply grid gap-4 sm:grid-cols-2; }
+.cs-pd-h2h .cs-eyebrow { @apply mt-1; }
+.cs-pd-rows { @apply m-0 mt-1; }
+.cs-pd-rows > div { @apply flex items-baseline justify-between gap-3 border-b py-2 text-sm last:border-b-0; }
+.cs-pd-rows dd { @apply m-0 font-mono tabular-nums; }
+.cs-pd-rows small { @apply ml-1 text-muted-foreground; }

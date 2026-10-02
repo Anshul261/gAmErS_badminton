@@ -33,3 +33,8 @@ export type PlayerStats = {
   points_against: number;
   score: number;
 };
+
+/** A game with its session's calendar day, for per-player dashboards. */
+export type StatGame = Pick<Game, "id" | "created_at" | "session_id" | "score_a" | "score_b" | "target_score" | "side_a_player_1" | "side_a_player_2" | "side_b_player_1" | "side_b_player_2"> & {
+  session_date: string;
+};
