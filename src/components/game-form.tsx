@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent } from "react";
-import { CheckIcon, PlusIcon, Cross2Icon } from "@radix-ui/react-icons";
+import { CheckIcon, PlusIcon, Cross2Icon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import { scoreError } from "@/lib/scoring";
 import type { Game, GameInput, Player, Session } from "@/lib/types";
@@ -27,11 +27,25 @@ export function GameForm({ session, players, game, offline, disabled = false, on
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [query, setQuery] = useState("");
   const draftId = useRef<string | null>(game?.id ?? null);
   const saving = useRef(false);
   const firstScore = useRef<HTMLInputElement>(null);
+  const search = useRef<HTMLInputElement>(null);
   const names = new Map(players.map((player) => [player.id, player.display_name]));
   const locked = pending || disabled;
+  const needle = query.trim().toLowerCase();
+  // Picked players stay visible so they can be removed while searching.
+  const shown = needle ? players.filter((player) => player.display_name.toLowerCase().includes(needle) || teamA.includes(player.id) || teamB.includes(player.id)) : players;
+  const matches = shown.filter((player) => !teamA.includes(player.id) && !teamB.includes(player.id));
+
+  function pick(playerId: string) {
+    assign(playerId);
+    if (needle) {
+      setQuery("");
+      search.current?.focus();
+    }
+  }
 
   function assign(playerId: string) {
     setError("");
@@ -127,13 +141,27 @@ export function GameForm({ session, players, game, offline, disabled = false, on
           })}
           <span className="cs-net" aria-hidden="true">VS</span>
         </div>
+        {players.length > 5 ? <div className="cs-player-search">
+          <MagnifyingGlassIcon width={16} height={16} aria-hidden="true" />
+          <label className="cs-sr-only" htmlFor={`${prefix}-search`}>Find a player in this session</label>
+          <input ref={search} id={`${prefix}-search`} className="cs-input" type="search" enterKeyHint="done" autoComplete="off" autoCorrect="off" spellCheck={false}
+            placeholder={`Find a player (${players.length} here)`} value={query} onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && query) { event.preventDefault(); setQuery(""); }
+              if (event.key !== "Enter") return;
+              // Enter adds the only match instead of submitting the form.
+              event.preventDefault();
+              if (needle && matches.length === 1) pick(matches[0].id);
+            }} />
+          {query ? <button type="button" className="cs-icon-button" aria-label="Clear search" onClick={() => { setQuery(""); search.current?.focus(); }}><Cross2Icon width={15} height={15} aria-hidden="true" /></button> : null}
+        </div> : null}
         <div className="cs-chips">
-          {players.map((player) => {
+          {shown.map((player) => {
             const assigned = teamA.includes(player.id) ? "A" : teamB.includes(player.id) ? "B" : null;
             return (
               <button type="button" className={`cs-chip ${assigned ? "is-selected" : ""}`} key={player.id}
                 aria-pressed={Boolean(assigned)} aria-label={assigned ? `Remove ${player.display_name} from side ${assigned}` : `Add ${player.display_name} to side ${side.toUpperCase()}`}
-                onClick={() => assign(player.id)}>
+                onClick={() => pick(player.id)}>
                 {assigned ? <span className="cs-chip-side">{assigned}</span> : <PlusIcon width={15} height={15} aria-hidden="true" />}
                 <span>{player.display_name}</span>
                 {assigned ? <Cross2Icon width={15} height={15} aria-hidden="true" /> : null}
@@ -141,6 +169,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
             );
           })}
         </div>
+        {needle && !matches.length ? <p className="cs-help" role="status">No one called &quot;{query.trim()}&quot; in this session. Add them under &quot;Someone joined late?&quot;.</p> : null}
         {!players.length ? <p className="cs-help">Add attendees to this session before logging a game.</p> : null}
       </fieldset>
 

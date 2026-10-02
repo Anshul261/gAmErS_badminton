@@ -418,3 +418,8 @@
 .cs-award-who { @apply mt-2 text-sm leading-snug font-semibold wrap-anywhere; }
 .cs-award-value { @apply mt-1 font-mono text-lg font-semibold tabular-nums; }
 .cs-awards small { @apply mt-1 text-[11px] leading-snug text-muted-foreground; }
+
+.cs-player-search { @apply relative mt-3 flex items-center; }
+.cs-player-search > svg { @apply pointer-events-none absolute left-3 text-muted-foreground; }
+.cs-player-search .cs-input { @apply w-full pr-11 pl-9 [&::-webkit-search-cancel-button]:hidden; }
+.cs-player-search .cs-icon-button { @apply absolute right-0 text-muted-foreground; }
