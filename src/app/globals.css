@@ -349,9 +349,6 @@
 .cs-player-link { @apply -my-1 inline min-h-0 cursor-pointer rounded-sm bg-transparent p-0 py-1 text-left font-[inherit] text-inherit underline decoration-input decoration-dotted underline-offset-4 hover:decoration-current; }
 .cs-roster .cs-player-link { @apply py-3; }
 .cs-mini-form { @apply mt-1.5 flex gap-1; }
-.cs-mini-form b, .cs-pd-axis b { @apply inline-block size-2 rounded-full; }
-:is(.cs-mini-form, .cs-pd-axis) b.is-win { @apply bg-primary; }
-:is(.cs-mini-form, .cs-pd-axis) b.is-loss { @apply bg-destructive/70; }
 .cs-player-dialog { @apply top-auto bottom-0 max-h-[92svh] w-full max-w-full translate-y-0 rounded-t-2xl rounded-b-none px-4 pt-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:top-1/2 md:bottom-auto md:max-h-[calc(100svh-4rem)] md:max-w-[560px] md:-translate-y-1/2 md:rounded-lg md:p-6; }
 .cs-player-dialog [data-slot="dialog-header"] { @apply gap-1 text-left; }
 .cs-pd { @apply grid gap-4; }
@@ -368,19 +365,6 @@
 .cs-pd-card .cs-section-heading { @apply mb-1; }
 .cs-pd-card h3 { @apply text-base font-semibold; }
 .cs-pd-delta { @apply font-mono text-xs font-semibold tabular-nums; }
-.cs-pd-chart { @apply mt-3 flex h-36 items-stretch gap-[2px]; }
-.cs-pd-bar { @apply flex min-w-0 flex-1 flex-col; }
-.cs-pd-bar > span { @apply flex flex-1 px-[1px]; }
-.cs-pd-up { @apply items-end border-b border-input; }
-.cs-pd-down { @apply items-start; }
-.cs-pd-bar i { @apply block w-full max-w-7 mx-auto; }
-.cs-pd-up i { @apply rounded-t bg-primary; }
-.cs-pd-down i { @apply rounded-b bg-destructive/70; }
-.cs-pd-axis { @apply mt-2 flex items-center justify-between gap-2 font-mono text-[10px] text-muted-foreground; }
-.cs-pd-axis > span:nth-child(2) { @apply flex items-center gap-1 font-sans; }
-.cs-pd-best { @apply flex flex-col gap-0.5 border-primary/30 bg-accent/60; }
-.cs-pd-best strong { @apply text-xl font-semibold; }
-.cs-pd-best span { @apply text-sm text-muted-foreground; }
 .cs-pd-list { @apply m-0 list-none p-0; }
 .cs-pd-list li + li { @apply border-t; }
 .cs-pd-list button { @apply flex min-h-12 w-full items-center gap-3 bg-transparent py-2 text-left text-sm; }
@@ -390,7 +374,47 @@
 .cs-pd-list svg { @apply shrink-0 text-muted-foreground; }
 .cs-pd-h2h { @apply grid gap-4 sm:grid-cols-2; }
 .cs-pd-h2h .cs-eyebrow { @apply mt-1; }
-.cs-pd-rows { @apply m-0 mt-1; }
-.cs-pd-rows > div { @apply flex items-baseline justify-between gap-3 border-b py-2 text-sm last:border-b-0; }
-.cs-pd-rows dd { @apply m-0 font-mono tabular-nums; }
-.cs-pd-rows small { @apply ml-1 text-muted-foreground; }
+
+.cs-mini-form b { @apply inline-block size-2 rounded-full; }
+.cs-mini-form b.is-win { @apply bg-primary; }
+.cs-mini-form b.is-loss { @apply bg-destructive/70; }
+.cs-pd-hero { @apply rounded-lg bg-primary px-4 py-4 text-primary-foreground; }
+.cs-pd-title { @apply font-mono text-[11px] font-semibold tracking-[.18em] uppercase opacity-80; }
+.cs-pd-tagline { @apply mt-1 text-lg leading-snug font-semibold text-balance; }
+.cs-pd-hero .cs-pd-form { @apply mt-3; }
+.cs-pd-hero .cs-pd-form > span.is-win { @apply bg-primary-foreground text-primary; }
+.cs-pd-hero .cs-pd-form > span.is-loss { @apply border-primary-foreground/40 text-primary-foreground/80; }
+.cs-pd-hero .cs-pd-form small { @apply text-primary-foreground/80; }
+.cs-mo { @apply mt-3; }
+.cs-mo-readout { @apply grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 rounded-md bg-muted px-3 py-2 text-xs; }
+.cs-mo-game { @apply font-mono text-[10px] text-muted-foreground; }
+.cs-mo-readout strong { @apply col-start-1 font-mono text-base tabular-nums; }
+.cs-mo-who { @apply col-span-2 wrap-anywhere text-muted-foreground; }
+.cs-mo-net { @apply col-start-2 row-start-1 row-span-2 self-center font-mono text-sm font-semibold tabular-nums; }
+.cs-mo-plot { @apply relative mt-8 ml-5 h-40 cursor-crosshair touch-pan-y rounded-sm select-none md:h-48; }
+.cs-mo-plot svg { @apply absolute inset-0 size-full overflow-visible; }
+.cs-mo-zero { stroke: var(--input); stroke-width: 1; }
+.cs-mo-session { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
+.cs-mo-area { fill: color-mix(in oklab, var(--primary) 10%, transparent); }
+.cs-mo-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cs-mo-dot { @apply pointer-events-none absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card; }
+.cs-mo-dot.is-win { @apply bg-primary; }
+.cs-mo-dot.is-loss { @apply bg-destructive; }
+.cs-mo-peak { @apply pointer-events-none absolute -translate-x-1/2 -translate-y-[calc(100%+6px)] rounded bg-card px-1 font-mono text-[10px] whitespace-nowrap text-muted-foreground; }
+.cs-mo-scale { @apply pointer-events-none absolute inset-y-0 -left-5 flex flex-col justify-between font-mono text-[9px] text-muted-foreground; }
+.cs-mo-axis { @apply mt-2 flex justify-between gap-2 font-mono text-[10px] text-muted-foreground; }
+.cs-pd-trophies { @apply m-0 grid list-none grid-cols-2 gap-2 p-0 md:grid-cols-3; }
+.cs-pd-trophies li { @apply flex min-w-0 flex-col rounded-lg border bg-background px-3 py-3; }
+.cs-pd-trophies span { @apply text-[10px] font-semibold tracking-[.1em] text-muted-foreground uppercase; }
+.cs-pd-trophies strong { @apply mt-1 font-mono text-xl font-semibold tabular-nums; }
+.cs-pd-trophies small { @apply mt-0.5 text-[11px] leading-snug text-muted-foreground wrap-anywhere; }
+.cs-awards { @apply mb-5; }
+.cs-awards ul { @apply -mx-4 m-0 flex list-none snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4; }
+.cs-awards li { @apply flex w-[46%] shrink-0 snap-start flex-col rounded-lg border bg-card px-3 py-3 md:w-auto; }
+.cs-awards li:first-child { @apply border-primary bg-primary text-primary-foreground; }
+.cs-awards li:first-child :is(small, .cs-award-name, .cs-dim) { @apply text-primary-foreground/80; }
+.cs-awards li:first-child .cs-player-link { @apply decoration-primary-foreground/50; }
+.cs-award-name { @apply font-mono text-[10px] font-semibold tracking-[.14em] text-muted-foreground uppercase; }
+.cs-award-who { @apply mt-2 text-sm leading-snug font-semibold wrap-anywhere; }
+.cs-award-value { @apply mt-1 font-mono text-lg font-semibold tabular-nums; }
+.cs-awards small { @apply mt-1 text-[11px] leading-snug text-muted-foreground; }

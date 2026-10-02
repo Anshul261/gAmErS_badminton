@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { playerDashboard } from "./player-stats";
+import { crewAwards, playerDashboard } from "./player-stats";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -29,10 +29,28 @@ describe("player dashboard", () => {
     expect(stats.bestWinStreak).toBe(2);
   });
 
-  it("finds the best day and splits by format", () => {
+  it("finds the best day and the fun numbers", () => {
     expect(stats.bestDay).toEqual({ date: "2026-09-02", wins: 2, losses: 1 });
-    expect(stats.formats.map((f) => `${f.format}:${f.wins}-${f.losses}`)).toEqual(["2v2:1-1", "1v1:1-1", "1v2 pair:1-0"]);
+    expect(stats.busiestDay?.date).toBe("2026-09-02");
     expect(stats.deuce).toEqual({ wins: 1, losses: 0 });
+    expect(stats.demolitions).toBe(2);
+    expect(stats.heartbreaks).toBe(1);
+    expect(stats.openers).toEqual({ wins: 2, losses: 0 });
+    expect(stats.biggestWin?.ours).toBe(11);
+    expect(stats.biggestWin?.theirs).toBe(3);
+    expect(stats.marathon?.ours).toBe(12);
+    expect(stats.timeline.map((m) => m.net)).toEqual([1, 0, 1, 2, 1]);
+    expect(stats.peak).toBe(2);
+    expect(stats.title.name).toBe("The Boss");
+  });
+
+  it("hands out crew awards", () => {
+    const awards = crewAwards(games, ["me", "ann", "bob", "cat", "dan"]);
+    const byId = Object.fromEntries(awards.map((award) => [award.id, award]));
+    expect(byId.feud.players).toEqual(["bob", "me"]);
+    expect(byId.feud.value).toBe("1–3");
+    expect(byId.dozer.players).toEqual(["me"]);
+    expect(byId.lungs.players).toEqual(["me"]);
   });
 
   it("ranks teammates and head-to-heads", () => {
