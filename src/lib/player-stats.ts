@@ -5,7 +5,7 @@ export type WinLoss = { wins: number; losses: number };
 export type DayRecord = WinLoss & { date: string };
 export type Rival = WinLoss & { id: string };
 /** One game from a player's point of view. */
-export type Moment = { id: string; date: string; won: boolean; ours: number; theirs: number; partners: string[]; opponents: string[]; net: number };
+export type Moment = { id: string; sessionId: string; date: string; won: boolean; ours: number; theirs: number; target: number; deuce: boolean; partners: string[]; opponents: string[]; net: number };
 export type Title = { name: string; line: string };
 
 export type PlayerDashboard = {
@@ -96,7 +96,7 @@ export function playerDashboard(playerId: string, games: StatGame[]): PlayerDash
     const won = ours > theirs;
     net += won ? 1 : -1;
     peak = Math.max(peak, net);
-    const moment = { id: game.id, date: game.session_date, won, ours, theirs, partners: us.filter((id) => id !== playerId), opponents: them, net };
+    const moment = { id: game.id, sessionId: game.session_id, date: game.session_date, won, ours, theirs, target: game.target_score, deuce: isDeuce(game), partners: us.filter((id) => id !== playerId), opponents: them, net };
     timeline.push(moment);
     pointsFor += ours;
     pointsAgainst += theirs;
@@ -221,4 +221,31 @@ export function crewAwards(games: StatGame[], playerIds: string[]): Award[] {
   if (opener) awards.push({ id: "opener", name: "No Warm-up Needed", line: "Most first games of the day won", players: [opener.id], value: `${opener.stats.openers.wins}–${opener.stats.openers.losses} openers` });
 
   return awards;
+}
+
+export type MatchFilter = "all" | "won" | "lost" | "deuce" | "close";
+
+/**
+ * Newest first. Every word in the query must appear somewhere in the game:
+ * a teammate or opponent name, "won"/"lost", the score ("11-8"), the date
+ * ("26 sept", "sat") or "deuce". "with ann" and "vs bob" pin the side.
+ */
+export function findMatches(timeline: Moment[], query: string, filter: MatchFilter, name: (id: string) => string, when: (date: string) => string): Moment[] {
+  const words = query.toLowerCase().replace(/[–—]/g, "-").split(/\s+/).filter(Boolean);
+  const keep = (moment: Moment) => filter === "all" || (filter === "won" && moment.won) || (filter === "lost" && !moment.won)
+    || (filter === "deuce" && moment.deuce) || (filter === "close" && Math.abs(moment.ours - moment.theirs) === 2);
+  return timeline.filter(keep).filter((moment) => {
+    if (!words.length) return true;
+    const partners = moment.partners.map(name).join(" ").toLowerCase();
+    const opponents = moment.opponents.map(name).join(" ").toLowerCase();
+    const text = [partners, opponents, moment.won ? "won win" : "lost loss", `${moment.ours}-${moment.theirs}`, `${moment.ours}:${moment.theirs}`, when(moment.date).toLowerCase(), moment.date, moment.deuce ? "deuce" : ""].join(" ");
+    let side: "with" | "vs" | null = null;
+    return words.every((word) => {
+      if (word === "with" || word === "vs" || word === "v" || word === "against") { side = word === "with" ? "with" : "vs"; return true; }
+      const pool = (side === "with" ? partners : side === "vs" ? opponents : text).split(/\s+/);
+      side = null;
+      // Numbers and scores match whole; names match from the start ("ann" finds Annie).
+      return /^[\d:-]+$/.test(word) ? pool.includes(word) : pool.some((token) => token.startsWith(word));
+    });
+  }).reverse();
 }

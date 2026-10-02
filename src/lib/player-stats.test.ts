@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crewAwards, playerDashboard } from "./player-stats";
+import { crewAwards, findMatches, playerDashboard } from "./player-stats";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -64,5 +64,33 @@ describe("player dashboard", () => {
     expect(empty.played).toBe(0);
     expect(empty.streak).toBeNull();
     expect(empty.bestDay).toBeNull();
+  });
+});
+
+describe("match finder", () => {
+  const games = [
+    game("2026-09-01", ["me", "ann"], ["bob", "cat"], 11, 5),
+    game("2026-09-01", ["me", "bob"], ["ann", "cat"], 9, 11),
+    game("2026-09-02", ["me"], ["bob"], 12, 10),
+  ];
+  const { timeline } = playerDashboard("me", games);
+  const names: Record<string, string> = { ann: "Annie", bob: "Bobby", cat: "Cat" };
+  const find = (query: string, filter: Parameters<typeof findMatches>[2] = "all") =>
+    findMatches(timeline, query, filter, (id) => names[id], (date) => date === "2026-09-02" ? "Wed 2 Sept" : "Tue 1 Sept").map((m) => `${m.ours}-${m.theirs}`);
+
+  it("lists newest first and filters by result", () => {
+    expect(find("")).toEqual(["12-10", "9-11", "11-5"]);
+    expect(find("", "lost")).toEqual(["9-11"]);
+    expect(find("", "deuce")).toEqual(["12-10"]);
+    expect(find("", "close")).toEqual(["12-10", "9-11"]);
+  });
+
+  it("matches names, scores and dates, and pins sides with 'with' and 'vs'", () => {
+    expect(find("bob")).toEqual(["12-10", "9-11", "11-5"]);
+    expect(find("with bob")).toEqual(["9-11"]);
+    expect(find("vs bob")).toEqual(["12-10", "11-5"]);
+    expect(find("vs bob won 1 sept")).toEqual(["11-5"]);
+    expect(find("11–5")).toEqual(["11-5"]);
+    expect(find("nobody")).toEqual([]);
   });
 });

@@ -423,3 +423,22 @@
 .cs-player-search > svg { @apply pointer-events-none absolute left-3 text-muted-foreground; }
 .cs-player-search .cs-input { @apply w-full pr-11 pl-9 [&::-webkit-search-cancel-button]:hidden; }
 .cs-player-search .cs-icon-button { @apply absolute right-0 text-muted-foreground; }
+
+.cs-mf { @apply mt-2 grid gap-2; }
+.cs-mf .cs-player-search { @apply mt-0; }
+.cs-mf-suggest { @apply flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground; }
+.cs-mf-suggest button { @apply min-h-9 rounded-full border bg-card px-3 text-xs text-foreground; }
+.cs-mf-filters { @apply -mx-3 flex gap-1.5 overflow-x-auto px-3 [scrollbar-width:none] md:mx-0 md:px-0; }
+.cs-mf-filters button { @apply min-h-9 shrink-0 rounded-full border bg-card px-3.5 text-xs font-medium; }
+.cs-mf-filters button[aria-pressed="true"] { @apply border-primary bg-primary text-primary-foreground; }
+.cs-mf-list { @apply m-0 list-none p-0; }
+.cs-mf-list li + li { @apply border-t; }
+.cs-mf-list button { @apply flex min-h-14 w-full items-center gap-3 bg-transparent py-2 text-left; }
+.cs-mf-date { @apply flex w-9 shrink-0 flex-col items-center font-mono text-base leading-none font-semibold tabular-nums; }
+.cs-mf-date small { @apply mt-1 text-[9px] font-normal tracking-wide text-muted-foreground uppercase; }
+.cs-mf-who { @apply min-w-0 flex-1 text-[13px] leading-snug wrap-anywhere; }
+.cs-mf-who small { @apply block font-mono text-[10px] text-muted-foreground; }
+.cs-mf-score { @apply flex shrink-0 items-center gap-1.5 font-mono text-sm font-semibold tabular-nums; }
+.cs-mf-score b { @apply inline-flex size-5 items-center justify-center rounded text-[10px]; }
+.cs-mf-score.is-win b { @apply bg-primary text-primary-foreground; }
+.cs-mf-score.is-loss b { @apply border border-destructive/40 text-destructive; }

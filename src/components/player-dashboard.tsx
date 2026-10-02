@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { ChevronRightIcon } from "@radix-ui/react-icons";
-import { playerDashboard, type Moment, type Rival, type WinLoss } from "@/lib/player-stats";
+import { ChevronRightIcon, Cross2Icon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { findMatches, playerDashboard, type MatchFilter, type Moment, type Rival, type WinLoss } from "@/lib/player-stats";
 import { dubaiDate, dubaiToday } from "@/lib/scoring";
 import type { StatGame } from "@/lib/types";
 
@@ -71,12 +71,51 @@ function Momentum({ timeline, label }: { timeline: Moment[]; label: (moment: Mom
   </div>;
 }
 
-export function PlayerDashboard({ playerId, games, names, error, onPick }: {
+const filters: { id: MatchFilter; label: string }[] = [{ id: "all", label: "All" }, { id: "won", label: "Won" }, { id: "lost", label: "Lost" }, { id: "deuce", label: "Deuce" }, { id: "close", label: "By 2" }];
+
+function MatchFinder({ timeline, name, vs, suggestions, onOpenSession }: {
+  timeline: Moment[];
+  name: (id: string) => string;
+  vs: (moment: Moment) => string;
+  suggestions: string[];
+  onOpenSession: (sessionId: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<MatchFilter>("all");
+  const [limit, setLimit] = useState(10);
+  const input = useRef<HTMLInputElement>(null);
+  const when = (date: string) => dubaiDate(date, { weekday: "short", year: "numeric" });
+  const results = useMemo(() => findMatches(timeline, query, filter, name, when), [timeline, query, filter, name]);
+  const search = (value: string) => { setQuery(value); setLimit(10); };
+
+  return <div className="cs-mf">
+    <div className="cs-player-search">
+      <MagnifyingGlassIcon width={16} height={16} aria-hidden="true" />
+      <label className="cs-sr-only" htmlFor="match-search">Search this player&apos;s games</label>
+      <input ref={input} id="match-search" className="cs-input" type="search" enterKeyHint="search" autoComplete="off" autoCorrect="off" spellCheck={false}
+        placeholder="vs Bobby, with Annie, 11-9, Sat…" value={query} onChange={(event) => search(event.target.value)}
+        onKeyDown={(event) => { if (event.key === "Escape" && query) { event.preventDefault(); event.stopPropagation(); search(""); } }} />
+      {query ? <button type="button" className="cs-icon-button" aria-label="Clear search" onClick={() => { search(""); input.current?.focus(); }}><Cross2Icon width={15} height={15} aria-hidden="true" /></button> : null}
+    </div>
+    {!query && suggestions.length ? <div className="cs-mf-suggest"><span>Try</span>{suggestions.map((text) => <button type="button" key={text} onClick={() => search(text)}>{text}</button>)}</div> : null}
+    <div className="cs-mf-filters" role="group" aria-label="Show games">{filters.map((item) => <button type="button" key={item.id} aria-pressed={filter === item.id} onClick={() => { setFilter(item.id); setLimit(10); }}>{item.label}</button>)}</div>
+    <p className="cs-help" role="status">{results.length === timeline.length ? `All ${plural(timeline.length, "game")}, newest first` : `${results.length} of ${plural(timeline.length, "game")}`}</p>
+    {results.length ? <ol className="cs-mf-list">{results.slice(0, limit).map((moment) => <li key={moment.id}><button type="button" onClick={() => onOpenSession(moment.sessionId)} aria-label={`${moment.won ? "Won" : "Lost"} ${moment.ours}–${moment.theirs} ${vs(moment)}, ${when(moment.date)}. Open the score sheet.`}>
+      <span className="cs-mf-date">{dubaiDate(moment.date, { day: "numeric", month: undefined })}<small>{dubaiDate(moment.date, { day: undefined, month: "short" })}</small></span>
+      <span className="cs-mf-who">{vs(moment)}<small>{dubaiDate(moment.date, { weekday: "short", day: undefined, month: undefined })}{moment.deuce ? " · deuce" : ""}{moment.target !== 11 ? ` · to ${moment.target}` : ""}</small></span>
+      <span className={`cs-mf-score ${moment.won ? "is-win" : "is-loss"}`}><b>{moment.won ? "W" : "L"}</b>{moment.ours}–{moment.theirs}</span>
+    </button></li>)}</ol> : <p className="cs-empty cs-empty-small">No games match. Try a first name, a score like 11-9, or a day like Sat.</p>}
+    {results.length > limit ? <button type="button" className="cs-button cs-button-outline cs-full" onClick={() => setLimit(limit + 20)}>Show more ({results.length - limit} left)</button> : null}
+  </div>;
+}
+
+export function PlayerDashboard({ playerId, games, names, error, onPick, onOpenSession }: {
   playerId: string;
   games: StatGame[] | null;
   names: Map<string, string>;
   error: string;
   onPick: (id: string) => void;
+  onOpenSession: (sessionId: string) => void;
 }) {
   const stats = useMemo(() => games ? playerDashboard(playerId, games) : null, [playerId, games]);
   const name = (id: string) => names.get(id) ?? "Archived player";
@@ -124,6 +163,12 @@ export function PlayerDashboard({ playerId, games, names, error, onPick }: {
       <p className="cs-help">Every win steps the line up, every loss steps it down. Tap or drag along it to replay any game.</p>
       <Momentum timeline={stats.timeline} label={vs} />
       <p className="cs-help">Best run: {plural(stats.bestWinStreak, "win")} in a row.{stats.recentDelta !== null ? ` Last 10 games vs their overall win rate: ${signed(stats.recentDelta)} points.` : ""}</p>
+    </section>
+
+    <section className="cs-pd-card" aria-labelledby="pd-matches">
+      <div className="cs-section-heading"><h3 id="pd-matches">Find a match</h3><span className="cs-caption">Tap one to open it</span></div>
+      <MatchFinder timeline={stats.timeline} name={name} vs={vs} onOpenSession={onOpenSession}
+        suggestions={[...stats.lostMost[0] ? [`vs ${name(stats.lostMost[0].id).split(" ")[0]}`] : [], ...stats.teammates[0] ? [`with ${name(stats.teammates[0].id).split(" ")[0]}`] : [], ...stats.deuce.wins + stats.deuce.losses ? ["deuce"] : []]} />
     </section>
 
     <section aria-labelledby="pd-trophies">
