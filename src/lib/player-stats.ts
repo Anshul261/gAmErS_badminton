@@ -1,5 +1,5 @@
-import { ordinal, rate as rateGame, rating } from "openskill";
-import type { StatGame } from "./types";
+import { rate as rateGame, rating } from "openskill";
+import type { PlayerStats, StatGame } from "./types";
 
 export type Result = "W" | "L";
 export type WinLoss = { wins: number; losses: number };
@@ -226,12 +226,12 @@ export function crewAwards(games: StatGame[], playerIds: string[]): Award[] {
 
 /** Players under this many games sit in the Provisional group on Stats. */
 export const PROVISIONAL_GAMES = 15;
-export type SkillRating = { mu: number; sigma: number; ordinal: number; played: number; provisional: boolean };
+export type SkillRating = { mu: number; sigma: number; played: number; provisional: boolean };
 
 /**
  * OpenSkill (Plackett-Luce) over every game in play order. Credit in doubles is split by who you
- * played with and against, and sigma is how unsure the rating still is. Ranks use the cautious
- * end, mu - 3 sigma, so a few lucky games can't jump the table.
+ * played with and against, and sigma is how unsure the rating still is. Under PROVISIONAL_GAMES
+ * sigma is still wide, so those players wait in their own group rather than being ranked on mu.
  */
 export function crewRatings(games: StatGame[]): Map<string, SkillRating> {
   const current = new Map<string, { mu: number; sigma: number }>();
@@ -245,8 +245,25 @@ export function crewRatings(games: StatGame[]): Map<string, SkillRating> {
   }
   return new Map([...current].map(([id, skill]) => {
     const count = played.get(id) ?? 0;
-    return [id, { ...skill, ordinal: ordinal(skill), played: count, provisional: count < PROVISIONAL_GAMES }];
+    return [id, { ...skill, played: count, provisional: count < PROVISIONAL_GAMES }];
   }));
+}
+
+/** Wins and losses for everyone who played in these games. */
+export function standings(games: StatGame[]): PlayerStats[] {
+  const rows = new Map<string, PlayerStats>();
+  for (const game of games) {
+    for (const [index, side] of sides(game).entries()) {
+      const won = index === 0 ? game.score_a > game.score_b : game.score_b > game.score_a;
+      for (const id of side) {
+        const row = rows.get(id) ?? { player_id: id, played: 0, wins: 0, losses: 0 };
+        row.played += 1;
+        if (won) row.wins += 1; else row.losses += 1;
+        rows.set(id, row);
+      }
+    }
+  }
+  return [...rows.values()];
 }
 
 export type MatchFilter = "all" | "won" | "lost" | "deuce" | "close";

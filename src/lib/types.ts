@@ -25,12 +25,6 @@ export type PlayerStats = {
   played: number;
   wins: number;
   losses: number;
-  singles: number;
-  solo: number;
-  pair: number;
-  doubles: number;
-  points_for: number;
-  points_against: number;
 };
 
 /** A game with its session's calendar day, for per-player dashboards. */

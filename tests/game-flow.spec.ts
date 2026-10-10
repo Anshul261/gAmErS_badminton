@@ -153,7 +153,7 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await page.getByRole("button", { name: "What does Skill mean?" }).click();
     await expect(page.getByRole("region", { name: "Column meaning" })).toContainText("Higher is better");
     await expect(table.getByRole("rowheader", { name: /Provisional/ })).toBeVisible();
-    await expect(table.getByRole("row").filter({ hasText: riya })).toContainText("±");
+    await expect(page.getByRole("group", { name: "Season" }).getByRole("button", { name: "All time" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     // Finish the spare court so it does not linger for the next run.
     await nav.getByRole("button", { name: "Play", exact: true }).click();

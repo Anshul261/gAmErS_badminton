@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROVISIONAL_GAMES, crewAwards, crewRatings, findMatches, playerDashboard } from "./player-stats";
+import { PROVISIONAL_GAMES, crewAwards, crewRatings, findMatches, playerDashboard, standings } from "./player-stats";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -104,13 +104,20 @@ describe("crew ratings", () => {
   ];
   const ratings = crewRatings(games);
 
-  it("keeps a hot start below a proven record", () => {
-    expect(ratings.get("vet")!.ordinal).toBeGreaterThan(ratings.get("new")!.ordinal);
-    expect(ratings.get("new")!.mu).toBeGreaterThan(25);
-  });
-
-  it(`marks players under ${PROVISIONAL_GAMES} games as provisional`, () => {
+  it(`keeps a hot start provisional until ${PROVISIONAL_GAMES} games`, () => {
     expect(ratings.get("vet")).toMatchObject({ played: 20, provisional: false });
     expect(ratings.get("new")).toMatchObject({ played: 4, provisional: true });
+    expect(ratings.get("new")!.sigma).toBeGreaterThan(ratings.get("vet")!.sigma);
+  });
+
+  it("rates winners above losers", () => {
+    expect(ratings.get("vet")!.mu).toBeGreaterThan(25);
+    for (const id of crew) expect(ratings.get(id)!.mu).toBeLessThan(25);
+  });
+
+  it("counts wins and losses for the table", () => {
+    const rows = new Map(standings(games).map((row) => [row.player_id, row]));
+    expect(rows.get("vet")).toEqual({ player_id: "vet", played: 20, wins: 15, losses: 5 });
+    expect(rows.get("new")).toEqual({ player_id: "new", played: 4, wins: 4, losses: 0 });
   });
 });

@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
-import type { Game, GameInput, Player, PlayerStats, Session, SessionData, StatGame, Workspace } from "./types";
+import type { Game, GameInput, Player, Session, SessionData, StatGame, Workspace } from "./types";
 
 async function author() {
   const { data, error } = await createClient().auth.getClaims();
@@ -177,12 +177,6 @@ export async function saveGame(input: GameInput, original?: Game): Promise<Game>
 export async function deleteGame(id: string): Promise<void> {
   const { error } = await createClient().from("games").delete().eq("id", id).select("id").single();
   fail(error);
-}
-
-export async function loadStats(): Promise<PlayerStats[]> {
-  const { data, error } = await createClient().rpc("player_stats");
-  fail(error);
-  return data!;
 }
 
 export async function loadAllGames(): Promise<StatGame[]> {

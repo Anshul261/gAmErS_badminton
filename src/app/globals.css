@@ -299,6 +299,12 @@
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 .cs-history-filter { @apply mb-5 grid gap-3; }
+.cs-season-timer { @apply mb-5 grid gap-1 rounded border bg-card p-4; }
+.cs-season-timer p:not(.cs-eyebrow) { @apply text-sm text-muted-foreground; }
+.cs-season-timer strong { @apply mr-1 font-mono text-3xl font-semibold text-foreground; }
+.cs-season-timer small { @apply text-xs text-muted-foreground; }
+.cs-season-bar { @apply my-1 h-1.5 overflow-hidden rounded-full bg-muted; }
+.cs-season-bar span { @apply block h-full rounded-full bg-primary; }
 .cs-segment-wrap { @apply grid grid-cols-3 md:inline-flex; }
 .cs-segment-wrap button { @apply whitespace-nowrap px-2 md:px-3; }
 .cs-date-range label { @apply grid flex-1 gap-1.5; }
