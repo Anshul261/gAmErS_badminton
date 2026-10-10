@@ -182,7 +182,7 @@ export async function deleteGame(id: string): Promise<void> {
 export async function loadStats(): Promise<PlayerStats[]> {
   const { data, error } = await createClient().rpc("player_stats");
   fail(error);
-  return data!.map((row) => ({ ...row, score: Number(row.score) }));
+  return data!;
 }
 
 export async function loadAllGames(): Promise<StatGame[]> {

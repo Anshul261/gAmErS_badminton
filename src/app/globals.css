@@ -243,7 +243,9 @@
 .cs-stats-table tbody th { @apply border-b px-2 py-4 text-left text-xs font-medium wrap-anywhere md:px-3 md:py-5 md:text-sm; }
 .cs-stats-table tbody th > span { @apply inline; }
 .cs-stats-table tbody th small { @apply mt-1 block text-[10px] font-normal text-muted-foreground; }
-.cs-stats-table tbody tr:first-child { @apply bg-accent/60; }
+.cs-stats-table tbody tr:first-child:not(.cs-stats-group) { @apply bg-accent/60; }
+.cs-stats-table tbody tr.cs-stats-group th { @apply border-b-2 border-input pt-8 pb-2 text-[10px] tracking-widest text-muted-foreground uppercase md:text-[11px]; }
+.cs-stats-table tbody tr.cs-stats-group th small { @apply tracking-normal normal-case; }
 .cs-stats-table .cs-rank { @apply mr-5 hidden font-mono text-[10px] font-normal text-muted-foreground md:inline; }
 .cs-stats-table .cs-stat-wins { @apply font-semibold; }
 .cs-positive { @apply text-primary; }

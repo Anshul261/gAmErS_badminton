@@ -31,7 +31,6 @@ export type PlayerStats = {
   doubles: number;
   points_for: number;
   points_against: number;
-  score: number;
 };
 
 /** A game with its session's calendar day, for per-player dashboards. */

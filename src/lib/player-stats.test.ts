@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { crewAwards, findMatches, playerDashboard } from "./player-stats";
+import { PROVISIONAL_GAMES, crewAwards, crewRatings, findMatches, playerDashboard } from "./player-stats";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -92,5 +92,25 @@ describe("match finder", () => {
     expect(find("vs bob won 1 sept")).toEqual(["11-5"]);
     expect(find("11–5")).toEqual(["11-5"]);
     expect(find("nobody")).toEqual([]);
+  });
+});
+
+describe("crew ratings", () => {
+  // A regular who wins 3 of 4 over 20 games, and a newcomer on a 4-0 hot start against the same crew.
+  const crew = ["p0", "p1", "p2", "p3", "p4"];
+  const games = [
+    ...Array.from({ length: 20 }, (_, i) => game("2026-09-01", ["vet"], [crew[i % 5]], i % 4 ? 11 : 6, i % 4 ? 6 : 11)),
+    ...Array.from({ length: 4 }, (_, i) => game("2026-09-02", ["new"], [crew[i]], 11, 6)),
+  ];
+  const ratings = crewRatings(games);
+
+  it("keeps a hot start below a proven record", () => {
+    expect(ratings.get("vet")!.ordinal).toBeGreaterThan(ratings.get("new")!.ordinal);
+    expect(ratings.get("new")!.mu).toBeGreaterThan(25);
+  });
+
+  it(`marks players under ${PROVISIONAL_GAMES} games as provisional`, () => {
+    expect(ratings.get("vet")).toMatchObject({ played: 20, provisional: false });
+    expect(ratings.get("new")).toMatchObject({ played: 4, provisional: true });
   });
 });

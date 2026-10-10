@@ -1,3 +1,4 @@
+import { ordinal, rate as rateGame, rating } from "openskill";
 import type { StatGame } from "./types";
 
 export type Result = "W" | "L";
@@ -221,6 +222,31 @@ export function crewAwards(games: StatGame[], playerIds: string[]): Award[] {
   if (opener) awards.push({ id: "opener", name: "No Warm-up Needed", line: "Most first games of the day won", players: [opener.id], value: `${opener.stats.openers.wins}–${opener.stats.openers.losses} openers` });
 
   return awards;
+}
+
+/** Players under this many games sit in the Provisional group on Stats. */
+export const PROVISIONAL_GAMES = 15;
+export type SkillRating = { mu: number; sigma: number; ordinal: number; played: number; provisional: boolean };
+
+/**
+ * OpenSkill (Plackett-Luce) over every game in play order. Credit in doubles is split by who you
+ * played with and against, and sigma is how unsure the rating still is. Ranks use the cautious
+ * end, mu - 3 sigma, so a few lucky games can't jump the table.
+ */
+export function crewRatings(games: StatGame[]): Map<string, SkillRating> {
+  const current = new Map<string, { mu: number; sigma: number }>();
+  const played = new Map<string, number>();
+  for (const game of [...games].sort(chronological)) {
+    const [a, b] = sides(game);
+    const [newA, newB] = rateGame([a.map((id) => current.get(id) ?? rating()), b.map((id) => current.get(id) ?? rating())], { rank: game.score_a > game.score_b ? [1, 2] : [2, 1] });
+    a.forEach((id, index) => current.set(id, newA[index]));
+    b.forEach((id, index) => current.set(id, newB[index]));
+    for (const id of [...a, ...b]) played.set(id, (played.get(id) ?? 0) + 1);
+  }
+  return new Map([...current].map(([id, skill]) => {
+    const count = played.get(id) ?? 0;
+    return [id, { ...skill, ordinal: ordinal(skill), played: count, provisional: count < PROVISIONAL_GAMES }];
+  }));
 }
 
 export type MatchFilter = "all" | "won" | "lost" | "deuce" | "close";
