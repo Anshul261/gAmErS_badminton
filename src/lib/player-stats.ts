@@ -1,4 +1,3 @@
-import { rate as rateGame, rating } from "openskill";
 import type { PlayerStats, StatGame } from "./types";
 
 export type Result = "W" | "L";
@@ -226,26 +225,54 @@ export function crewAwards(games: StatGame[], playerIds: string[]): Award[] {
 
 /** Players under this many games sit in the Provisional group on Stats. */
 export const PROVISIONAL_GAMES = 15;
+/** Skill is shown as BASE + SCALE x strength: everyone starts at 50, and 20 points is about 2.7 to 1 odds. */
+export const SKILL_BASE = 50;
+const SKILL_SCALE = 20;
 export type SkillRating = { mu: number; sigma: number; played: number; provisional: boolean };
 
 /**
- * OpenSkill (Plackett-Luce) over every game in play order. Credit in doubles is split by who you
- * played with and against, and sigma is how unsure the rating still is. Under PROVISIONAL_GAMES
- * sigma is still wide, so those players wait in their own group rather than being ranked on mu.
+ * Bradley-Terry fitted to every game at once, so the order games were logged in can't change
+ * anyone's rating. A side's strength is the sum of its players' plus a pair advantage in a 1v2
+ * (learned from the season's 1v2 games, nudged toward 1), the winner is decided by a logistic
+ * curve on the difference, and a prior pulls players with few games toward average.
+ * mu is the best fit on the Skill scale; sigma is how unsure it still is.
  */
 export function crewRatings(games: StatGame[]): Map<string, SkillRating> {
-  const current = new Map<string, { mu: number; sigma: number }>();
+  const matches = games.map((game) => { const [a, b] = sides(game); return { a, b, extra: a.length - b.length, aWon: game.score_a > game.score_b }; });
+  const strength = new Map<string, number>();
   const played = new Map<string, number>();
-  for (const game of [...games].sort(chronological)) {
-    const [a, b] = sides(game);
-    const [newA, newB] = rateGame([a.map((id) => current.get(id) ?? rating()), b.map((id) => current.get(id) ?? rating())], { rank: game.score_a > game.score_b ? [1, 2] : [2, 1] });
-    a.forEach((id, index) => current.set(id, newA[index]));
-    b.forEach((id, index) => current.set(id, newB[index]));
-    for (const id of [...a, ...b]) played.set(id, (played.get(id) ?? 0) + 1);
+  for (const { a, b } of matches) for (const id of [...a, ...b]) { strength.set(id, 0); played.set(id, (played.get(id) ?? 0) + 1); }
+  const sum = (ids: string[]) => ids.reduce((total, id) => total + strength.get(id)!, 0);
+  let curvature = new Map<string, number>();
+  let pair = 1;
+
+  // Damped Newton steps on the log-posterior. It is strictly concave, so there is one answer.
+  for (let step = 0; step < 500; step += 1) {
+    const slope = new Map([...strength].map(([id, value]) => [id, -value]));
+    curvature = new Map([...strength.keys()].map((id) => [id, 1]));
+    let pairSlope = 1 - pair, pairCurvature = 1;
+    for (const { a, b, extra, aWon } of matches) {
+      const chance = 1 / (1 + Math.exp(sum(b) - sum(a) - pair * extra));
+      const miss = (aWon ? 1 : 0) - chance;
+      for (const id of a) { slope.set(id, slope.get(id)! + miss); curvature.set(id, curvature.get(id)! + chance * (1 - chance)); }
+      for (const id of b) { slope.set(id, slope.get(id)! - miss); curvature.set(id, curvature.get(id)! + chance * (1 - chance)); }
+      pairSlope += miss * extra;
+      pairCurvature += chance * (1 - chance) * extra * extra;
+    }
+    let moved = 0;
+    for (const [id, value] of strength) {
+      const change = 0.5 * slope.get(id)! / curvature.get(id)!;
+      strength.set(id, value + change);
+      moved = Math.max(moved, Math.abs(change));
+    }
+    const pairChange = 0.5 * pairSlope / pairCurvature;
+    pair += pairChange;
+    if (Math.max(moved, Math.abs(pairChange)) < 1e-7) break;
   }
-  return new Map([...current].map(([id, skill]) => {
-    const count = played.get(id) ?? 0;
-    return [id, { ...skill, played: count, provisional: count < PROVISIONAL_GAMES }];
+
+  return new Map([...strength].map(([id, value]) => {
+    const count = played.get(id)!;
+    return [id, { mu: SKILL_BASE + SKILL_SCALE * value, sigma: SKILL_SCALE / Math.sqrt(curvature.get(id)!), played: count, provisional: count < PROVISIONAL_GAMES }];
   }));
 }
 

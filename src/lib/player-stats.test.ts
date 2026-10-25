@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PROVISIONAL_GAMES, crewAwards, crewRatings, findMatches, playerDashboard, standings } from "./player-stats";
+import { PROVISIONAL_GAMES, SKILL_BASE, crewAwards, crewRatings, findMatches, playerDashboard, standings } from "./player-stats";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -111,8 +111,26 @@ describe("crew ratings", () => {
   });
 
   it("rates winners above losers", () => {
-    expect(ratings.get("vet")!.mu).toBeGreaterThan(25);
-    for (const id of crew) expect(ratings.get(id)!.mu).toBeLessThan(25);
+    expect(ratings.get("vet")!.mu).toBeGreaterThan(SKILL_BASE);
+    for (const id of crew) expect(ratings.get(id)!.mu).toBeLessThan(SKILL_BASE);
+  });
+
+  it("gives the same ratings whatever order the games were logged in", () => {
+    const shuffled = [...games].reverse().map((item, i) => ({ ...item, created_at: `2026-09-0${1 + (i % 2)}T09:${String(i).padStart(2, "0")}:00Z` }));
+    const again = crewRatings(shuffled);
+    for (const [id, rating] of ratings) expect(again.get(id)!.mu).toBeCloseTo(rating.mu, 6);
+  });
+
+  it("credits a solo win over a pair more than an even win", () => {
+    const base = Array.from({ length: 10 }, (_, i) => game("2026-09-01", i % 2 ? ["y"] : ["z"], i % 2 ? ["z"] : ["y"], 11, 5));
+    const even = crewRatings([...base, game("2026-09-01", ["x"], ["y"], 11, 5)]);
+    const solo = crewRatings([...base, game("2026-09-01", ["x"], ["y", "z"], 11, 5)]);
+    expect(solo.get("x")!.mu).toBeGreaterThan(even.get("x")!.mu);
+  });
+
+  it("pulls a short hot start toward average", () => {
+    expect(ratings.get("new")!.mu).toBeLessThan(ratings.get("vet")!.mu + 25);
+    expect(ratings.get("new")!.mu - SKILL_BASE).toBeLessThan(60);
   });
 
   it("counts wins and losses for the table", () => {
