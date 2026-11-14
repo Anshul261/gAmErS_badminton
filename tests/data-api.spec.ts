@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import { createTestAccount } from "./helpers";
 
 test("the public Data API keeps anonymous users out and enforces scores", async () => {
   const url = process.env.TEST_SUPABASE_URL!;
@@ -7,9 +8,10 @@ test("the public Data API keeps anonymous users out and enforces scores", async 
   const anonymous = createClient(url, key, { auth: { persistSession: false } });
   const [owner, friend] = await Promise.all(["owner", "friend"].map(async (name) => {
     const client = createClient(url, key, { auth: { persistSession: false } });
-    const signup = await client.auth.signUp({ email: `${name}-${crypto.randomUUID()}@example.com`, password: "test-password-123" });
-    expect(signup.error).toBeNull();
-    return { client, id: signup.data.user!.id };
+    const account = await createTestAccount(name);
+    const login = await client.auth.signInWithPassword({ email: account.email, password: account.password });
+    expect(login.error).toBeNull();
+    return { client, id: account.id };
   }));
   const suffix = crypto.randomUUID().slice(0, 8);
   const players = await owner.client.from("players").insert([

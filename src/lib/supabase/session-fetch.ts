@@ -2,6 +2,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 type SessionAuth = Pick<SupabaseClient["auth"], "getSession" | "refreshSession">;
 
+function sessionIdentity(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    const claims = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    return typeof claims.sub === "string" && typeof claims.session_id === "string"
+      ? JSON.stringify([claims.sub, claims.session_id]) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Recover expired Data API requests before a transient rejection reaches the UI. */
 export function sessionFetch(url: string, auth: () => SessionAuth, fetcher: typeof fetch = fetch): typeof fetch {
   const origin = new URL(url).origin;
@@ -31,6 +42,8 @@ export function sessionFetch(url: string, auth: () => SessionAuth, fetcher: type
     const error = await response.clone().json().catch(() => null);
     if (error?.code !== "PGRST303" || typeof error.message !== "string" || !/jwt expired/i.test(error.message)) return response;
 
+    const identity = sessionIdentity(request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "");
+    if (!identity) return response;
     recovery ??= recover(request.headers.get("Authorization"));
     const pending = recovery;
     let token: string | null;
@@ -41,7 +54,8 @@ export function sessionFetch(url: string, auth: () => SessionAuth, fetcher: type
     } finally {
       if (recovery === pending) recovery = null;
     }
-    if (!token || request.signal.aborted) return response;
+    // Decoded claims only prevent cross-session retries. Supabase still validates the JWT and RLS.
+    if (!token || request.signal.aborted || sessionIdentity(token) !== identity) return response;
     request.headers.set("Authorization", `Bearer ${token}`);
     return fetcher(request);
   };

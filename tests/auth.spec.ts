@@ -1,14 +1,18 @@
 import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import { createTestAccount } from "./helpers";
 
-test("sign up with email and password on desktop and mobile", async ({ page }) => {
+test("existing accounts can sign in on desktop and mobile while registration is closed", async ({ page }) => {
+  const account = await createTestAccount();
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Back for another game?" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
-  await page.getByLabel("Email", { exact: true }).fill(`browser-${crypto.randomUUID()}@example.com`);
-  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Create account", exact: true })).toHaveCount(0);
+  await expect(page.getByText("Sign in with your existing account. New account registration is closed.")).toBeVisible();
+  await page.getByLabel("Email", { exact: true }).fill(account.email);
+  await page.getByLabel("Password", { exact: true }).fill(account.password);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL("http://localhost:3001/");
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "gAmErS", exact: true })).toBeVisible();
@@ -18,6 +22,23 @@ test("sign up with email and password on desktop and mobile", async ({ page }) =
   await expect(page).toHaveURL(/\/login$/);
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test("direct public signup is blocked by Supabase", async () => {
+  const client = createClient(process.env.TEST_SUPABASE_URL!, process.env.TEST_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+  const result = await client.auth.signUp({ email: `blocked-${crypto.randomUUID()}@example.com`, password: "test-password-123" });
+  expect(result.error?.code).toBe("signup_disabled");
+  expect(result.data.session).toBeNull();
+  expect(result.data.user).toBeNull();
+});
+
+test("password recovery still has a route back to sign in", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.getByRole("button", { name: "Send reset link" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create account" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Back to sign in" }).click();
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
 });
 
 test("failed sign-in stays on the login page with an error", async ({ page }) => {

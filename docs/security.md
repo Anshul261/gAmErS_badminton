@@ -1,16 +1,18 @@
 # Database security
 
-The schema lives in `supabase/migrations/`. It creates five public tables (`profiles`, `players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. There are no `SECURITY DEFINER` functions.
+The schema lives in `supabase/migrations/`. It creates five public tables (`profiles`, `players`, `sessions`, `session_players`, `games`) with RLS and explicit client grants. Every application client uses a publishable key. Application RPCs use `SECURITY INVOKER`. Hosted Supabase may also have a `SECURITY DEFINER` event-trigger helper, `rls_auto_enable`; it is not an app RPC and client execution is revoked.
 
 ## Access model
 
-There is one court. Every `authenticated` account can read and write the four court tables; `profiles` is readable by everyone but each account may insert or update only its own row, and nobody can delete one. `anon` has no table or RPC privileges. The only gate is Supabase Auth: whoever can create an account is on the court. Keep the address private, and once your friends have accounts, close sign-ups:
+There is one court. Every existing `authenticated` account can read and write the four court tables. `profiles` is readable by authenticated accounts, but each account may insert or update only its own row, and nobody can delete one. `anon` has no table or RPC privileges. Public registration is disabled in hosted Supabase Auth and the local configuration. The app only offers sign-in and password recovery.
+
+The Auth configuration script also disables public registration:
 
 ```sh
-SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https://your-app.vercel.app -- --close-signups
+SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https://your-app.vercel.app
 ```
 
-You can reopen sign-ups from the Supabase dashboard (Authentication → Sign In / Providers → Allow new users to sign up) when someone new joins the crew.
+Existing users can still sign in and reset their passwords. Removing the signup button alone does not close the API; the hosted `disable_signup` setting is the registration gate. Administrative user creation remains restricted to trusted Supabase project administrators.
 
 Every insert and update policy checks `created_by = auth.uid()`. On updates, send the current user's UUID in `created_by`, even when correcting another friend's row. This column means the author of the current revision, not a permanent owner. A JWT without a subject cannot write anything. Record IDs, session assignments, attendance identities, and creation timestamps are immutable on updates. A game correction can change the players, target, and scores, but cannot move the game to another session.
 
@@ -27,7 +29,15 @@ Every insert and update policy checks `created_by = auth.uid()`. On updates, sen
 
 ## Leaderboard score
 
-`game_values()` walks every game in play order and prices it Elo-style: each side's strength is the average running score of its players, the expected result comes from the strength gap (`scale` = 10 points for a ~91% favourite), and each player on a side receives `2 × (result − expected)`, so an even game is worth ±1 and an upset up to ±2. In a 1v2 the pair is priced like any game; the solo player's expectation is computed as if the opponents were `solo_handicap` (2.7) points stronger, so a solo win is worth about +1.3 and a solo loss about −0.7. Margin of victory is ignored. Both knobs are constants at the top of the function. `player_stats()` sums these values into `score` and adds format counts; the client ranks by score, then win %, then points difference. The functions are read-only, `SECURITY INVOKER`, and run under the caller's RLS.
+The current Stats tab uses `seasonPerformance()` in `src/lib/player-stats.ts`, after filtering games to the selected period. Season score is the lower bound of the Wilson interval with `z = 1.96`, multiplied by 100. Every format counts equally, without partner, opponent or margin weights. Players need 15 games to qualify. Full scores decide places, followed by win rate, games played and player ID for exact ties.
+
+The browser computes the score from games loaded through the authenticated Data API. It does not grant access or change stored results. The older `game_values()` and `player_stats()` RPCs remain read-only, `SECURITY INVOKER`, and run under the caller's RLS, but do not determine the current leaderboard.
+
+## Expired-token retries
+
+`src/lib/supabase/session-fetch.ts` retries only a hosted Data API response with HTTP 401, code `PGRST303` and an expired-JWT message. It refreshes once, preserves the request body and game ID, and requires the renewed token to belong to the same user and Auth session as the rejected request. It never applies recovery to Auth endpoints or another host.
+
+Decoded JWT claims only prevent a cross-session retry. They never authorize a request. Supabase verifies the token and applies RLS to the retry. Invalid signatures, permission denials, signed-out sessions and failed refreshes remain failures.
 
 ## Column contract
 
@@ -59,6 +69,6 @@ npm run test:e2e
 npm run db:stop
 ```
 
-`db:test` runs `supabase/tests/security.sql` in one rolled-back transaction: RLS on all tables, no definer functions, pinned search paths, anonymous denials, author spoofing, immutable identities, score rules, duplicates, closed-session behaviour, and cascades. `db:test:concurrency` exercises both insert/end lock orderings on two connections. `test:e2e` covers sign-up, two-browser syncing, conflicting corrections, and the Data API from an anonymous client.
+`db:test` runs `supabase/tests/security.sql` in one rolled-back transaction: RLS on all tables, no definer functions, pinned search paths, anonymous denials, author spoofing, immutable identities, score rules, duplicates, closed-session behaviour, and cascades. `db:test:concurrency` exercises both insert/end lock orderings on two connections. `test:e2e` covers existing-account login, blocked public signup, two-browser syncing, conflicting corrections and anonymous Data API denials. Fixture accounts are provisioned through the local admin API; the helper rejects hosted project URLs.
 
 RLS protects client roles, not database owners or service-role credentials. Keep those server-only. There is no database rate limiter; Supabase Auth rate limits apply to sign-up and sign-in.

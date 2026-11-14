@@ -7,6 +7,9 @@ if (!status.PUBLISHABLE_KEY?.startsWith("sb_publishable_") || new URL(status.API
 }
 process.env.TEST_SUPABASE_URL = status.API_URL;
 process.env.TEST_SUPABASE_PUBLISHABLE_KEY = status.PUBLISHABLE_KEY;
+const adminKey = status.SECRET_KEY ?? status.SERVICE_ROLE_KEY;
+if (typeof adminKey !== "string" || !adminKey) throw new Error("E2E fixture setup requires the local admin key.");
+process.env.TEST_SUPABASE_ADMIN_KEY = adminKey;
 
 export default defineConfig({
   testDir: "./tests",

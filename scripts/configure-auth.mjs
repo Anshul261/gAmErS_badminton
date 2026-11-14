@@ -14,7 +14,7 @@ const response = await fetch(`https://api.supabase.com/v1/projects/${encodeURICo
     external_phone_enabled: false,
     password_min_length: 8,
     refresh_token_rotation_enabled: true,
-    ...(process.argv.includes("--close-signups") ? { disable_signup: true } : {}),
+    disable_signup: true,
   }),
 });
 if (!response.ok) throw new Error(`Auth configuration failed with HTTP ${response.status}.`);

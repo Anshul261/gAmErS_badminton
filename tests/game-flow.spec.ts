@@ -1,16 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
-
-async function signup(page: Page) {
-  await page.goto("http://localhost:3001/login");
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
-  await page.getByLabel("Email", { exact: true }).fill(`game-${crypto.randomUUID()}@example.com`);
-  await page.getByLabel("Password", { exact: true }).fill("test-password-123");
-  await page.getByRole("button", { name: "Create account", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "gAmErS", exact: true })).toBeVisible();
-}
+import { test, expect } from "@playwright/test";
+import { signInTestAccount } from "./helpers";
 
 test("log mixed doubles, sync phones, correct scores and browse history", async ({ page, browser }, info) => {
-  await signup(page);
+  await signInTestAccount(page);
+  await expect(page.getByRole("heading", { name: "gAmErS", exact: true })).toBeVisible();
   // Player names are unique across the whole court, so each run gets its own trio.
   const suffix = info.project.name.slice(0, 1).toUpperCase() + crypto.randomUUID().slice(0, 4);
   const [riya, sam, jay] = ["Riya", "Sam", "Jay"].map((name) => `${name} ${suffix}`);
@@ -91,7 +84,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
   const otherContext = await browser.newContext();
   const other = await otherContext.newPage();
   try {
-    await signup(other);
+    await signInTestAccount(other);
+    await expect(other.getByRole("heading", { name: "gAmErS", exact: true })).toBeVisible();
     // Two courts are open, so the second phone has to choose rather than being dropped into one.
     await other.getByRole("list", { name: "On court or planned" }).getByRole("listitem").filter({ hasText: trio }).getByRole("button", { name: "Open" }).click();
     await expect(other.getByRole("form", { name: "Log game", exact: true })).toBeVisible();

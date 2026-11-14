@@ -4,16 +4,20 @@ import { sessionFetch } from "./session-fetch";
 const origin = "https://example.supabase.co";
 const expired = () => new Response(JSON.stringify({ code: "PGRST303", message: "JWT expired" }), { status: 401 });
 const session = (access_token: string) => ({ data: { session: { access_token } }, error: null });
+const token = (generation: string, sub = "original-user", session_id = "original-session") =>
+  `header.${Buffer.from(JSON.stringify({ sub, session_id, generation })).toString("base64url")}.signature`;
+const oldToken = token("old");
+const newToken = token("new");
 
 function setup() {
   const auth = {
-    getSession: vi.fn().mockResolvedValue(session("old-token")),
-    refreshSession: vi.fn().mockResolvedValue(session("new-token")),
+    getSession: vi.fn().mockResolvedValue(session(oldToken)),
+    refreshSession: vi.fn().mockResolvedValue(session(newToken)),
   };
   const fetcher = vi.fn<typeof fetch>();
   const request = new Request(`${origin}/rest/v1/games`, {
     method: "POST",
-    headers: { Authorization: "Bearer old-token", apikey: "publishable-key", "Content-Type": "application/json" },
+    headers: { Authorization: `Bearer ${oldToken}`, apikey: "publishable-key", "Content-Type": "application/json" },
     body: JSON.stringify({ id: "same-game-id", score_a: 11, score_b: 5 }),
   });
   return { auth, fetcher, request, fetch: sessionFetch(origin, () => auth, fetcher) };
@@ -38,8 +42,8 @@ describe("expired session recovery", () => {
     });
     expect((await fetch(request)).status).toBe(200);
     expect(auth.refreshSession).toHaveBeenCalledTimes(1);
-    expect(sent[0].headers.get("Authorization")).toBe("Bearer old-token");
-    expect(sent[1].headers.get("Authorization")).toBe("Bearer new-token");
+    expect(sent[0].headers.get("Authorization")).toBe(`Bearer ${oldToken}`);
+    expect(sent[1].headers.get("Authorization")).toBe(`Bearer ${newToken}`);
     expect(sent[1].headers.get("apikey")).toBe("publishable-key");
     expect(sent[1].method).toBe("POST");
     expect(await sent[0].text()).toBe(await sent[1].text());
@@ -49,21 +53,45 @@ describe("expired session recovery", () => {
     const { auth, fetcher, request, fetch } = setup();
     let finish!: (value: ReturnType<typeof session>) => void;
     auth.refreshSession.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
-    fetcher.mockImplementation(async (input) => (input as Request).headers.get("Authorization") === "Bearer old-token" ? expired() : new Response("ok"));
+    fetcher.mockImplementation(async (input) => (input as Request).headers.get("Authorization") === `Bearer ${oldToken}` ? expired() : new Response("ok"));
     const results = [fetch(request.clone()), fetch(request.clone()), fetch(request.clone())];
     await vi.waitFor(() => expect(auth.refreshSession).toHaveBeenCalledTimes(1));
-    finish(session("new-token"));
+    finish(session(newToken));
     expect((await Promise.all(results)).map((response) => response.status)).toEqual([200, 200, 200]);
     expect(auth.refreshSession).toHaveBeenCalledTimes(1);
   });
 
   it("uses an already refreshed session for a late expired response", async () => {
     const { auth, fetcher, request, fetch } = setup();
-    auth.getSession.mockResolvedValue(session("new-token"));
+    auth.getSession.mockResolvedValue(session(newToken));
     fetcher.mockResolvedValueOnce(expired()).mockResolvedValueOnce(new Response("ok"));
     expect((await fetch(request)).status).toBe(200);
     expect(auth.refreshSession).not.toHaveBeenCalled();
-    expect((fetcher.mock.calls[1][0] as Request).headers.get("Authorization")).toBe("Bearer new-token");
+    expect((fetcher.mock.calls[1][0] as Request).headers.get("Authorization")).toBe(`Bearer ${newToken}`);
+  });
+
+  it("does not replay an expired write under a different account", async () => {
+    const { auth, fetcher, request, fetch } = setup();
+    auth.getSession.mockResolvedValue(session(token("new", "different-user", "different-session")));
+    fetcher.mockResolvedValue(expired());
+    expect((await fetch(request)).status).toBe(401);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replay a write after the session changes during refresh", async () => {
+    const { auth, fetcher, request, fetch } = setup();
+    auth.refreshSession.mockResolvedValue(session(token("new", "different-user", "different-session")));
+    fetcher.mockResolvedValue(expired());
+    expect((await fetch(request)).status).toBe(401);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not replay an old write after signing in again to the same account", async () => {
+    const { auth, fetcher, request, fetch } = setup();
+    auth.getSession.mockResolvedValue(session(token("new", "original-user", "new-session")));
+    fetcher.mockResolvedValue(expired());
+    expect((await fetch(request)).status).toBe(401);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it("does not loop if the renewed token is rejected", async () => {

@@ -4,11 +4,11 @@ The badminton scorebook for one crew. Next.js, TypeScript, Tailwind, shadcn/ui, 
 
 ## How it works
 
-- One court, no groups. Anyone who creates an account is in. Share the address only with friends, then close sign-ups (see below).
+- One court, no groups. Existing accounts share the scorebook. Public registration is disabled in Supabase Auth and removed from the app.
 - Players are names on the score sheet, not accounts. Add them in **People**.
 - Start a session with the people playing, or plan one ahead with a date, time, place and a Google Maps / Waze link; people tap themselves in when they arrive. Log 1v1 / 1v2 / 2v2 games to 11 or 21 (win by two), add late arrivals, finish the session. Several courts can run at once; each phone picks which session it logs for.
 - Every game is tagged with who logged it. Set your name under People; it defaults to the first part of your email.
-- **Stats** ranks by a Score computed in Postgres from every game. The recipe is deliberately not shown in the app; it is documented for maintainers in [docs/security.md](docs/security.md#leaderboard-score).
+- **Stats** ranks season performance by confidence-adjusted win rate. Singles, doubles and 1v2 count equally. The score help explains the calculation; [docs/security.md](docs/security.md#leaderboard-score) records the implementation.
 - Other phones update every few seconds. Scores can be corrected or deleted from the session or from **History**; there a session can also be reopened for a forgotten game, have its date or target edited, or be deleted outright. **Stats** recalculates.
 - **FAQ** tab explains all of this in plain terms.
 
@@ -34,7 +34,7 @@ The Vercel project reads `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PU
 vercel --prod
 ```
 
-Point Supabase Auth at the deployed address (sets the site URL and callback allow-list; add `--close-signups` once everyone has an account):
+Point Supabase Auth at the deployed address. This sets the site URL and callback allow-list and keeps public registration disabled:
 
 ```sh
 SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https://your-app.vercel.app
@@ -42,7 +42,7 @@ SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npm run auth:configure https:
 
 ## Security
 
-Four tables, all with RLS; `anon` can do nothing; every write is attributed to the signed-in user; no `SECURITY DEFINER` functions. Postgres enforces scores, attendance, and closed sessions. See [docs/security.md](docs/security.md).
+Five tables, all with RLS. `anon` has no table or application RPC privileges. Every write is attributed to the signed-in user, and application RPCs use `SECURITY INVOKER`. Postgres enforces scores, attendance and closed sessions. See [docs/security.md](docs/security.md).
 
 ## Verify
 
