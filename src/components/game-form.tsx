@@ -31,6 +31,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
   const draftId = useRef<string | null>(game?.id ?? null);
   const saving = useRef(false);
   const firstScore = useRef<HTMLInputElement>(null);
+  const firstSide = useRef<HTMLButtonElement>(null);
   const search = useRef<HTMLInputElement>(null);
   const names = new Map(players.map((player) => [player.id, player.display_name]));
   const locked = pending || disabled;
@@ -92,6 +93,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
     saving.current = true;
     setPending(true);
     onPendingChange?.(true);
+    let saved = false;
     try {
       // A retry must use the same ID, even if the first response was lost.
       draftId.current ??= crypto.randomUUID();
@@ -108,17 +110,22 @@ export function GameForm({ session, players, game, offline, disabled = false, on
       }, game);
       if (!game) {
         draftId.current = null;
+        setTeamA([]);
+        setTeamB([]);
+        setSide("a");
+        setQuery("");
         setScoreA("");
         setScoreB("");
       }
-      setNotice(game ? "Correction saved." : "Game saved. Same teams? Enter the next score.");
+      saved = true;
+      setNotice(game ? "Correction saved." : "Game saved. Pick players for the next match.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The game could not be saved. Your draft is still here.");
     } finally {
       saving.current = false;
       setPending(false);
       onPendingChange?.(false);
-      if (!game) requestAnimationFrame(() => firstScore.current?.focus());
+      if (!game) requestAnimationFrame(() => saved ? firstSide.current?.focus() : firstScore.current?.focus());
     }
   }
 
@@ -131,7 +138,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
           {(["a", "b"] as const).map((value) => {
             const team = value === "a" ? teamA : teamB;
             return (
-              <button type="button" className={`cs-court-side ${side === value ? "is-selected" : ""}`} key={value}
+              <button ref={value === "a" ? firstSide : undefined} type="button" className={`cs-court-side ${side === value ? "is-selected" : ""}`} key={value}
                 aria-pressed={side === value} onClick={() => setSide(value)}>
                 <span className="cs-court-side-label">Side {value.toUpperCase()} {side === value ? <CheckIcon width={15} height={15} aria-hidden="true" /> : null}</span>
                 <span className="cs-court-names">{team.length ? team.map((id) => names.get(id) ?? "Archived player").join(" + ") : "Pick players"}</span>

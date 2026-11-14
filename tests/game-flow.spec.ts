@@ -108,6 +108,9 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await gameForm.getByRole("button", { name: "Save game", exact: true }).click();
     await expect(page.getByText("1 game logged", { exact: true })).toBeVisible();
     await expect(gameForm.getByLabel("Side A", { exact: true })).toHaveValue("");
+    await expect(gameForm.getByRole("button", { name: /Side A Pick players/ })).toHaveAttribute("aria-pressed", "true");
+    await expect(gameForm.getByRole("button", { name: /Side B Pick players/ })).toHaveAttribute("aria-pressed", "false");
+    await expect(gameForm.getByRole("button", { name: /^Remove .* from side/ })).toHaveCount(0);
     await expect(page.getByText("by you", { exact: true })).toBeVisible();
     await expect(other.getByText("1 game logged", { exact: true })).toBeVisible({ timeout: 20000 });
     await expect(other.getByText(`by ${scorer}`, { exact: true })).toBeVisible();
