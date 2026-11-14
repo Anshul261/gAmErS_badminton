@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { PROVISIONAL_GAMES, SKILL_BASE, crewAwards, crewRatings, findMatches, playerDashboard, standings } from "./player-stats";
+import { PROVISIONAL_GAMES, crewAwards, findMatches, playerDashboard, seasonPerformance, seasonScore, standings } from "./player-stats";
+import { inSeason, seasons } from "./seasons";
 import type { StatGame } from "./types";
 
 let n = 0;
@@ -95,42 +96,78 @@ describe("match finder", () => {
   });
 });
 
-describe("crew ratings", () => {
+describe("season performance", () => {
   // A regular who wins 3 of 4 over 20 games, and a newcomer on a 4-0 hot start against the same crew.
   const crew = ["p0", "p1", "p2", "p3", "p4"];
   const games = [
     ...Array.from({ length: 20 }, (_, i) => game("2026-09-01", ["vet"], [crew[i % 5]], i % 4 ? 11 : 6, i % 4 ? 6 : 11)),
     ...Array.from({ length: 4 }, (_, i) => game("2026-09-02", ["new"], [crew[i]], 11, 6)),
   ];
-  const ratings = crewRatings(games);
+  const performance = new Map(seasonPerformance(games).map((row) => [row.player_id, row]));
 
   it(`keeps a hot start provisional until ${PROVISIONAL_GAMES} games`, () => {
-    expect(ratings.get("vet")).toMatchObject({ played: 20, provisional: false });
-    expect(ratings.get("new")).toMatchObject({ played: 4, provisional: true });
-    expect(ratings.get("new")!.sigma).toBeGreaterThan(ratings.get("vet")!.sigma);
+    expect(performance.get("vet")).toMatchObject({ played: 20, provisional: false });
+    expect(performance.get("new")).toMatchObject({ played: 4, provisional: true });
+    expect(seasonPerformance(games)[0].player_id).toBe("vet");
   });
 
-  it("rates winners above losers", () => {
-    expect(ratings.get("vet")!.mu).toBeGreaterThan(SKILL_BASE);
-    for (const id of crew) expect(ratings.get(id)!.mu).toBeLessThan(SKILL_BASE);
+  it("matches independently calculated Wilson lower bounds", () => {
+    expect(seasonScore({ wins: 85, losses: 29 })).toBeCloseTo(65.8566489212, 8);
+    expect(seasonScore({ wins: 78, losses: 29 })).toBeCloseTo(63.7906641368, 8);
+    expect(seasonScore({ wins: 50, losses: 50 })).toBeCloseTo(40.3829828590, 8);
+    expect(seasonScore({ wins: 0, losses: 0 })).toBe(0);
+    expect(seasonScore({ wins: 0, losses: 20 })).toBe(0);
   });
 
-  it("gives the same ratings whatever order the games were logged in", () => {
+  it("keeps the same scores and ordering when games are logged in a different order", () => {
     const shuffled = [...games].reverse().map((item, i) => ({ ...item, created_at: `2026-09-0${1 + (i % 2)}T09:${String(i).padStart(2, "0")}:00Z` }));
-    const again = crewRatings(shuffled);
-    for (const [id, rating] of ratings) expect(again.get(id)!.mu).toBeCloseTo(rating.mu, 6);
+    expect(seasonPerformance(shuffled)).toEqual(seasonPerformance(games));
   });
 
-  it("credits a solo win over a pair more than an even win", () => {
-    const base = Array.from({ length: 10 }, (_, i) => game("2026-09-01", i % 2 ? ["y"] : ["z"], i % 2 ? ["z"] : ["y"], 11, 5));
-    const even = crewRatings([...base, game("2026-09-01", ["x"], ["y"], 11, 5)]);
-    const solo = crewRatings([...base, game("2026-09-01", ["x"], ["y", "z"], 11, 5)]);
-    expect(solo.get("x")!.mu).toBeGreaterThan(even.get("x")!.mu);
+  it("counts every format equally without opponent or partner weights", () => {
+    const scoreFor = (a: string[], b: string[]) => seasonPerformance([
+      game("2026-09-01", a, b, 11, 5),
+      game("2026-09-01", a, b, 9, 11),
+    ]).find((row) => row.player_id === "me")!.score;
+    const singles = scoreFor(["me"], ["bob"]);
+    expect(scoreFor(["me", "ann"], ["bob", "cat"])).toBe(singles);
+    expect(scoreFor(["me"], ["bob", "cat"])).toBe(singles);
+    expect(scoreFor(["me", "ann"], ["bob"])).toBe(singles);
+    const again = seasonPerformance([...games, ...Array.from({ length: 20 }, () => game("2026-09-03", ["p0"], ["p1"], 11, 0))]);
+    expect(again.find((row) => row.player_id === "vet")).toEqual(performance.get("vet"));
   });
 
-  it("pulls a short hot start toward average", () => {
-    expect(ratings.get("new")!.mu).toBeLessThan(ratings.get("vet")!.mu + 25);
-    expect(ratings.get("new")!.mu - SKILL_BASE).toBeLessThan(60);
+  it("rewards wins and a longer record at the same win rate", () => {
+    expect(seasonScore({ wins: 16, losses: 5 })).toBeGreaterThan(seasonScore({ wins: 15, losses: 5 }));
+    expect(seasonScore({ wins: 15, losses: 6 })).toBeLessThan(seasonScore({ wins: 15, losses: 5 }));
+    expect(seasonScore({ wins: 60, losses: 40 })).toBeGreaterThan(seasonScore({ wins: 6, losses: 4 }));
+    expect(seasonScore({ wins: 100, losses: 1 })).toBeGreaterThan(seasonScore({ wins: 2, losses: 0 }));
+  });
+
+  it("never ranks a qualified record with more wins and a better win rate lower", () => {
+    const records = [{ wins: 78, losses: 29 }, { wins: 46, losses: 46 }, { wins: 35, losses: 68 }];
+    for (const record of records) {
+      for (let extraWins = 1; extraWins <= 15; extraWins += 1) {
+        for (let losses = 0; losses <= record.losses + 15; losses += 1) {
+          const better = { wins: record.wins + extraWins, losses };
+          if (better.wins / (better.wins + losses) <= record.wins / (record.wins + record.losses)) continue;
+          expect(seasonScore(better)).toBeGreaterThan(seasonScore(record));
+        }
+      }
+    }
+  });
+
+  it("starts a new season without carrying over results or qualification", () => {
+    const current = seasons("2026-11-19")[0];
+    const nextGames = [...games, game("2026-11-19", ["vet"], ["new"], 11, 5)];
+    const rows = seasonPerformance(nextGames.filter((item) => inSeason(current, item.session_date)));
+    expect(rows.find((row) => row.player_id === "vet")).toMatchObject({ wins: 1, losses: 0, played: 1, provisional: true });
+    expect(rows.find((row) => row.player_id === "vet")!.score).toBe(seasonScore({ wins: 1, losses: 0 }));
+  });
+
+  it("breaks identical records consistently", () => {
+    const tied = Array.from({ length: 16 }, (_, i) => game("2026-09-01", ["z", "a"], ["b", "c"], i % 2 ? 11 : 5, i % 2 ? 5 : 11));
+    expect(seasonPerformance(tied).map((row) => row.player_id)).toEqual(["a", "b", "c", "z"]);
   });
 
   it("counts wins and losses for the table", () => {

@@ -225,55 +225,30 @@ export function crewAwards(games: StatGame[], playerIds: string[]): Award[] {
 
 /** Players under this many games sit in the Provisional group on Stats. */
 export const PROVISIONAL_GAMES = 15;
-/** Skill is shown as BASE + SCALE x strength: everyone starts at 50, and 20 points is about 2.7 to 1 odds. */
-export const SKILL_BASE = 50;
-const SKILL_SCALE = 20;
-export type SkillRating = { mu: number; sigma: number; played: number; provisional: boolean };
+/** Wilson's 95% interval lower bound, scaled to 0–100. Every format counts equally. */
+export function seasonScore(record: WinLoss): number {
+  const played = record.wins + record.losses;
+  if (!played || !record.wins) return 0;
+  const winRate = record.wins / played;
+  const z = 1.96;
+  const zSquared = z * z;
+  const adjustment = z * Math.sqrt(winRate * (1 - winRate) / played + zSquared / (4 * played * played));
+  return 100 * (winRate + zSquared / (2 * played) - adjustment) / (1 + zSquared / played);
+}
 
-/**
- * Bradley-Terry fitted to every game at once, so the order games were logged in can't change
- * anyone's rating. A side's strength is the sum of its players' plus a pair advantage in a 1v2
- * (learned from the season's 1v2 games, nudged toward 1), the winner is decided by a logistic
- * curve on the difference, and a prior pulls players with few games toward average.
- * mu is the best fit on the Skill scale; sigma is how unsure it still is.
- */
-export function crewRatings(games: StatGame[]): Map<string, SkillRating> {
-  const matches = games.map((game) => { const [a, b] = sides(game); return { a, b, extra: a.length - b.length, aWon: game.score_a > game.score_b }; });
-  const strength = new Map<string, number>();
-  const played = new Map<string, number>();
-  for (const { a, b } of matches) for (const id of [...a, ...b]) { strength.set(id, 0); played.set(id, (played.get(id) ?? 0) + 1); }
-  const sum = (ids: string[]) => ids.reduce((total, id) => total + strength.get(id)!, 0);
-  let curvature = new Map<string, number>();
-  let pair = 1;
+export type SeasonPerformance = PlayerStats & { score: number; provisional: boolean };
 
-  // Damped Newton steps on the log-posterior. It is strictly concave, so there is one answer.
-  for (let step = 0; step < 500; step += 1) {
-    const slope = new Map([...strength].map(([id, value]) => [id, -value]));
-    curvature = new Map([...strength.keys()].map((id) => [id, 1]));
-    let pairSlope = 1 - pair, pairCurvature = 1;
-    for (const { a, b, extra, aWon } of matches) {
-      const chance = 1 / (1 + Math.exp(sum(b) - sum(a) - pair * extra));
-      const miss = (aWon ? 1 : 0) - chance;
-      for (const id of a) { slope.set(id, slope.get(id)! + miss); curvature.set(id, curvature.get(id)! + chance * (1 - chance)); }
-      for (const id of b) { slope.set(id, slope.get(id)! - miss); curvature.set(id, curvature.get(id)! + chance * (1 - chance)); }
-      pairSlope += miss * extra;
-      pairCurvature += chance * (1 - chance) * extra * extra;
-    }
-    let moved = 0;
-    for (const [id, value] of strength) {
-      const change = 0.5 * slope.get(id)! / curvature.get(id)!;
-      strength.set(id, value + change);
-      moved = Math.max(moved, Math.abs(change));
-    }
-    const pairChange = 0.5 * pairSlope / pairCurvature;
-    pair += pairChange;
-    if (Math.max(moved, Math.abs(pairChange)) < 1e-7) break;
-  }
-
-  return new Map([...strength].map(([id, value]) => {
-    const count = played.get(id)!;
-    return [id, { mu: SKILL_BASE + SKILL_SCALE * value, sigma: SKILL_SCALE / Math.sqrt(curvature.get(id)!), played: count, provisional: count < PROVISIONAL_GAMES }];
-  }));
+/** Rank the supplied period's results, with unqualified players below the ranked table. */
+export function seasonPerformance(games: StatGame[]): SeasonPerformance[] {
+  return standings(games).map((player) => ({
+    ...player,
+    score: seasonScore(player),
+    provisional: player.played < PROVISIONAL_GAMES,
+  })).sort((a, b) => Number(a.provisional) - Number(b.provisional)
+    || b.score - a.score
+    || rate(b) - rate(a)
+    || b.played - a.played
+    || a.player_id.localeCompare(b.player_id));
 }
 
 /** Wins and losses for everyone who played in these games. */
