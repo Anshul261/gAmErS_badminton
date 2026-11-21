@@ -6,6 +6,8 @@ import { ArrowDownIcon, ArrowRightIcon, ArchiveIcon, SewingPinIcon, CheckIcon, C
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameForm } from "@/components/game-form";
 import { PlayerDashboard } from "@/components/player-dashboard";
+import { CourtProvider } from "@/components/court/context";
+import type { Tab } from "@/components/court/context";
 import { addAttendee, addPlayer, archivePlayer, deleteGame, deleteSession, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, reopenSession, saveGame, startSession, updateProfile, updateSession } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { dubaiDate, dubaiToday, mapLabel, shortTime } from "@/lib/scoring";
@@ -14,7 +16,6 @@ import type { SeasonPerformance } from "@/lib/player-stats";
 import { inSeason, seasons } from "@/lib/seasons";
 import type { Game, GameInput, Session, SessionData, StatGame, Workspace } from "@/lib/types";
 
-type Tab = "play" | "history" | "stats" | "people" | "faq";
 type Range = "all" | "today" | "7" | "30" | "90" | "custom";
 const ranges = [{ id: "all", label: "All" }, { id: "today", label: "Today" }, { id: "7", label: "7 days" }, { id: "30", label: "30 days" }, { id: "90", label: "90 days" }, { id: "custom", label: "Custom" }] as const;
 const tabs = [{ id: "play", label: "Play", icon: PlayIcon }, { id: "history", label: "History", icon: CounterClockwiseClockIcon }, { id: "stats", label: "Stats", icon: BarChartIcon }, { id: "people", label: "People", icon: PersonIcon }, { id: "faq", label: "FAQ", icon: QuestionMarkCircledIcon }] as const;
@@ -422,7 +423,10 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
 
         <nav className="cs-tabs" aria-label="Court sections">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={tab === id ? "is-active" : ""} aria-current={tab === id ? "page" : undefined} onClick={() => startTransition(() => setTab(id))}><Icon width={19} height={19} aria-hidden="true" /><span>{label}</span></button>)}</nav>
 
-        {workspaceError ? <section className="cs-empty cs-access-error" role="alert"><h2>We couldn&apos;t open the court.</h2><p>{workspaceError}</p><p>Your sign-in may have expired. Scores are hidden until access is checked.</p><div className="cs-actions"><button className="cs-button cs-button-green" disabled={offline} onClick={() => refresh.current()}><ReloadIcon width={17} height={17} aria-hidden="true" />Try again</button><Link className="cs-button cs-button-outline" href="/login">Sign in again</Link></div></section> : !workspace ? <div className="cs-play-grid" role="status"><div><div className="cs-loading-court" aria-hidden="true"><div /><div /><div /><div /></div><p className="cs-help mt-4!">Getting the court ready...</p></div><div className="cs-score-sheet cs-loading-sheet" aria-hidden="true">{[0, 1, 2].map((row) => <div key={row}><span /><span /></div>)}</div></div> : <>
+        {workspaceError ? <section className="cs-empty cs-access-error" role="alert"><h2>We couldn&apos;t open the court.</h2><p>{workspaceError}</p><p>Your sign-in may have expired. Scores are hidden until access is checked.</p><div className="cs-actions"><button className="cs-button cs-button-green" disabled={offline} onClick={() => refresh.current()}><ReloadIcon width={17} height={17} aria-hidden="true" />Try again</button><Link className="cs-button cs-button-outline" href="/login">Sign in again</Link></div></section> : !workspace ? <div className="cs-play-grid" role="status"><div><div className="cs-loading-court" aria-hidden="true"><div /><div /><div /><div /></div><p className="cs-help mt-4!">Getting the court ready...</p></div><div className="cs-score-sheet cs-loading-sheet" aria-hidden="true">{[0, 1, 2].map((row) => <div key={row}><span /><span /></div>)}</div></div> : <CourtProvider value={{
+          userId, workspace, names, locked, offline, busy, mutate, setError, setTab, setProfileId, setEditingGame, setSessions, setWorkspace,
+          refresh: () => refresh.current(), frozen,
+        }}>
           {selectedError ? <div className="cs-banner cs-banner-warning" role="alert"><span>Scores may not be up to date. {selectedError}</span><button className="cs-text-button" disabled={offline} onClick={() => refresh.current()}>Retry</button></div> : null}
 
           <section hidden={tab !== "play"} aria-label="Play">
@@ -539,7 +543,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
               setMyName("");
             }, "Name saved. Games you log will show it.");
           }}><label className="cs-sr-only" htmlFor="my-name">Your name</label><input className="cs-input" id="my-name" maxLength={32} autoComplete="nickname" placeholder={workspace.profiles[userId] ?? defaultName} value={myName} disabled={locked} onChange={(event) => setMyName(event.target.value)} /><button className="cs-button cs-button-outline" type="submit" disabled={locked || offline || !myName.trim()}>{busy === "profile" ? "Saving..." : "Save"}</button></form><p className="cs-help">Shown as &quot;by {workspace.profiles[userId] ?? defaultName}&quot; on games you log or correct. {Object.keys(workspace.profiles).length} {Object.keys(workspace.profiles).length === 1 ? "account is" : "accounts are"} signed up: {Object.values(workspace.profiles).sort((a, b) => a.localeCompare(b)).join(", ")}.</p></div><div className="cs-invite-symbol" aria-hidden="true"><PersonIcon width={27} height={27} /><PlusIcon width={16} height={16} /></div><p className="cs-eyebrow">FOR THE EXISTING CREW</p><h3>Your shared scorebook.</h3><p>Share this address with friends who already have an account. New account registration is closed.</p><button className="cs-button cs-button-green cs-full" onClick={() => void copyLink()}>{copied ? <CheckIcon width={17} height={17} aria-hidden="true" /> : <CopyIcon width={17} height={17} aria-hidden="true" />}{copied ? "Link copied" : "Copy the link"}</button><p role="status" className="cs-sr-only">{copied ? "Link copied to clipboard." : ""}</p><p className="cs-help">Only existing accounts can sign in.</p></aside></div></section>
-        </>}
+        </CourtProvider>}
         <section hidden={tab !== "faq"} aria-label="FAQ"><div className="cs-session-heading"><div><p className="cs-eyebrow">HOW THIS WORKS</p><h2>Questions, answered.</h2></div></div><div className="cs-faq">{faqs.map(([question, answer]) => <details key={question}><summary>{question}</summary><p>{answer}</p></details>)}</div></section>
         <footer className="cs-footer"><span>gAmErS cOuRtSiDe.</span><span>For the love of the game.</span></footer>
       </main>
