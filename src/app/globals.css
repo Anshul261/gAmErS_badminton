@@ -113,7 +113,7 @@
 .cs-main { @apply mx-auto max-w-6xl px-5 pt-0 pb-5 md:px-6 md:pb-8 lg:px-9 xl:px-0; }
 .cs-page-heading { @apply flex items-center justify-between gap-3 py-4 md:items-end md:gap-6 md:pt-7 md:pb-6; }
 .cs-page-heading > div { @apply min-w-0; }
-.cs-eyebrow { @apply text-[9px] leading-normal font-semibold tracking-[.14em] text-muted-foreground md:text-[10px]; }
+.cs-eyebrow { @apply font-mono text-[11px] leading-normal font-semibold tracking-[.08em] text-muted-foreground uppercase; }
 .cs-page-heading .cs-eyebrow, .cs-session-heading .cs-eyebrow { @apply mb-1.5 md:mb-2; }
 .cs-tabs { @apply mb-7 flex gap-6 border-b; }
 .cs-tabs button { @apply flex min-h-13 items-center justify-center gap-2 border-b-[3px] border-transparent px-3 pt-2 pb-3 text-sm font-semibold text-muted-foreground; }
@@ -136,38 +136,40 @@
 .cs-label, .cs-field label, .cs-add-player > label { @apply mb-1.5 block text-xs font-semibold; }
 .cs-help { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-fieldset > .cs-help { @apply mb-2.5 md:mb-3; }
-.cs-court { @apply relative isolate grid grid-cols-2 gap-0 rounded border border-court bg-court p-2 text-court-foreground md:p-2.5; }
+.cs-court { @apply relative isolate grid grid-cols-2 gap-0 rounded border border-court-line bg-court p-2 text-court-foreground md:p-2.5; }
 .cs-court::before { content: ""; position: absolute; inset: 8px 24px; border: 1px solid var(--court-line); pointer-events: none; z-index: -1; }
-.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border border-court-foreground/35 bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
-.cs-court-side.is-selected { @apply bg-court-foreground/5 text-court-accent; box-shadow: inset 0 0 0 2px var(--court-accent); }
+.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border border-court-line bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
+.cs-court-side.is-selected { @apply bg-court-foreground/5; box-shadow: inset 0 0 0 2px var(--court-accent); }
 .cs-court-side:focus-visible { @apply -outline-offset-4 outline-court-foreground; }
-.cs-court-side-label { @apply flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] uppercase; }
+.cs-court-side-label { @apply flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] text-muted-foreground uppercase; }
+.cs-court-side.is-selected .cs-court-side-label { @apply text-court-accent; }
 .cs-court-names { @apply text-base leading-snug font-medium tracking-tight wrap-anywhere lg:text-lg; }
-.cs-court-count { @apply font-mono text-[10px] text-court-accent tabular-nums; }
-.cs-net { @apply pointer-events-none absolute top-1/2 left-1/2 grid size-6 -translate-1/2 place-items-center rounded-full border border-court-accent/50 bg-court font-mono text-[8px] font-medium text-court-accent; }
+.cs-court-count { @apply font-mono text-[10px] text-muted-foreground tabular-nums; }
+.cs-net { @apply pointer-events-none absolute top-1/2 left-1/2 grid size-6 -translate-1/2 place-items-center rounded-full border border-input bg-background font-mono text-[8px] font-medium text-muted-foreground; }
 .cs-chips { @apply mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2; }
 .cs-chip { @apply inline-flex min-h-11 max-w-full items-center justify-center gap-1.5 rounded border bg-card px-2.5 py-2 text-left text-xs leading-snug md:px-3; }
 .cs-chip > span:not(.cs-chip-side) { @apply min-w-0 wrap-anywhere; }
-.cs-chip.is-selected { @apply border-primary/50 bg-accent text-primary; }
-.cs-chip-side { @apply grid size-4.5 shrink-0 place-items-center rounded-xs bg-primary font-mono text-[10px] font-medium text-primary-foreground; }
+.cs-chip.is-selected { @apply border-foreground bg-accent text-foreground; }
+.cs-chip-side { @apply grid size-4.5 shrink-0 place-items-center rounded-xs bg-win font-mono text-[10px] font-medium text-win-foreground; }
 .cs-between { @apply flex items-center justify-between gap-3; }
 .cs-score-fieldset { @apply relative border-t pt-2; }
 .cs-score-fieldset legend { @apply float-left mb-0 flex min-h-13 w-full items-center py-0 pr-36 pl-0; }
 .cs-target-row { @apply absolute top-2 right-0 gap-2; }
 .cs-segment { @apply inline-flex gap-0.5 rounded border bg-muted p-0.5; }
 .cs-segment button { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xs px-3 py-2 text-[13px] leading-snug font-medium text-muted-foreground; }
-.cs-segment button[aria-pressed="true"] { @apply bg-card text-primary; }
+.cs-segment button[aria-pressed="true"] { @apply bg-accent text-foreground; }
 .cs-scoreboard { @apply clear-both mt-2 mb-1.5 grid grid-cols-[minmax(0,1fr)_20px_minmax(0,1fr)] items-center gap-2 md:mb-2; }
 .cs-scoreboard > div { @apply min-w-0; }
 .cs-scoreboard label { @apply mb-1 block text-center text-[10px] font-semibold tracking-[.12em] uppercase; }
 .cs-score-input { @apply h-20 w-full min-w-0 rounded border border-input bg-card p-1 text-center font-mono text-[52px] leading-none font-medium tracking-[-.06em] text-foreground tabular-nums md:h-24 md:text-6xl; }
-.cs-score-input::placeholder { @apply text-input opacity-100; }
+.cs-score-input::placeholder { @apply text-muted-foreground/60 opacity-100; }
+.cs-score-input:focus { @apply border-ring; }
 .cs-score-input[aria-invalid="true"] { @apply border-destructive; }
 .cs-score-divider { @apply pt-4 text-center font-mono text-2xl font-normal text-muted-foreground; }
 .cs-centered { @apply text-center; }
 .cs-button { @apply inline-flex min-h-11 items-center justify-center gap-2.5 rounded border border-transparent px-4 py-2.5 text-center text-[13px] leading-snug font-semibold no-underline; }
 .cs-button-primary { @apply bg-primary text-primary-foreground; }
-.cs-button-outline { @apply border-input bg-transparent text-primary; }
+.cs-button-outline { @apply border-input bg-transparent text-foreground; }
 .cs-save-button { @apply min-h-12 justify-between px-5 text-[15px]; }
 .cs-full { @apply w-full; }
 .cs-icon-button { @apply inline-flex size-11 min-w-11 items-center justify-center rounded text-inherit; }
@@ -177,12 +179,12 @@
 .cs-form-status:empty { @apply hidden; }
 .cs-global-status { @apply pt-3 text-xs text-primary; }
 .cs-global-status:empty { @apply hidden; }
-.cs-error { @apply rounded-xs border-l-2 border-destructive bg-destructive/5 px-3 py-2.5 text-xs leading-normal text-destructive wrap-anywhere; }
+.cs-error { @apply rounded-xs border-l-2 border-destructive bg-destructive/10 px-3 py-2.5 text-xs leading-normal text-destructive wrap-anywhere; }
 .cs-banner { @apply mt-3 mb-4 flex items-center justify-between gap-2 rounded border bg-muted px-3 py-2.5 text-xs text-foreground wrap-anywhere md:gap-3 md:px-4; }
 .cs-banner > span { @apply min-w-0; }
 .cs-banner > button { @apply shrink-0; }
 .cs-banner-warning { @apply border-input bg-muted text-foreground; }
-.cs-banner-error { @apply border-destructive/25 bg-destructive/5 text-destructive; }
+.cs-banner-error { @apply border-destructive/40 bg-destructive/10 text-destructive; }
 .cs-game-list ol { @apply m-0 list-none p-0; }
 .cs-game-row { @apply border-b pt-4 pb-2; content-visibility: auto; contain-intrinsic-size: auto 152px; }
 .cs-game-row:first-child { @apply pt-0; }
@@ -211,26 +213,26 @@
 .cs-setup-target legend { @apply float-left w-full; }
 .cs-setup-target .cs-segment { @apply mt-2; }
 .cs-setup-target .cs-help { @apply mt-2 mb-0; }
-.cs-court-note { @apply relative overflow-hidden rounded bg-primary p-6 text-primary-foreground lg:p-8; }
-.cs-court-note .cs-eyebrow { @apply mt-6 text-accent; }
+.cs-court-note { @apply relative overflow-hidden rounded border bg-court p-6 text-court-foreground lg:p-8; }
+.cs-court-note .cs-eyebrow { @apply mt-6 text-court-accent; }
 .cs-court-note h3 { @apply mt-3 mb-4 text-[30px] leading-[1.12] tracking-tight; }
-.cs-court-note p:not(.cs-eyebrow) { @apply mt-3 text-xs leading-relaxed text-accent; }
-.cs-decorative-court { position: relative; width: 100%; height: 138px; border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); background: transparent; }
-.cs-decorative-court::before { content: ""; position: absolute; inset: 0 12%; border-right: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); border-left: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); }
-.cs-decorative-court::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid color-mix(in srgb, var(--accent) 69%, transparent); }
-.cs-decorative-court > span:first-child { position: absolute; top: 15%; bottom: 15%; left: 0; right: 0; border-top: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); }
-.cs-decorative-court > span:last-child { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid color-mix(in srgb, var(--accent) 33%, transparent); }
+.cs-court-note p:not(.cs-eyebrow) { @apply mt-3 text-xs leading-relaxed text-court-foreground/80; }
+.cs-decorative-court { position: relative; width: 100%; height: 138px; border: 1px solid color-mix(in srgb, var(--court-foreground) 30%, transparent); background: transparent; }
+.cs-decorative-court::before { content: ""; position: absolute; inset: 0 12%; border-right: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); border-left: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
+.cs-decorative-court::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid color-mix(in srgb, var(--court-foreground) 40%, transparent); }
+.cs-decorative-court > span:first-child { position: absolute; top: 15%; bottom: 15%; left: 0; right: 0; border-top: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
+.cs-decorative-court > span:last-child { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
 .cs-court-note .cs-decorative-court { @apply mx-auto h-28 max-w-56 md:h-32 md:max-w-none; }
 .cs-empty { @apply flex min-h-56 flex-col items-center justify-center gap-3.5 px-6 py-14 text-center; }
 .cs-empty > p { @apply max-w-sm text-[13px] leading-relaxed text-muted-foreground; }
-.cs-empty > svg { @apply text-primary/70; }
+.cs-empty > svg { @apply text-muted-foreground; }
 .cs-empty-small { @apply min-h-0 px-3 py-8; }
 .cs-empty-small h3 { @apply text-base; }
 .cs-empty-small p { @apply text-xs; }
 .cs-loading-court { @apply grid w-full gap-3; }
 .cs-loading-court > div { @apply rounded bg-muted; }
 .cs-loading-court > div:first-child { @apply h-5 w-1/3; }
-.cs-loading-court > div:nth-child(2) { @apply h-32 border border-primary/10 bg-accent/60; }
+.cs-loading-court > div:nth-child(2) { @apply h-32 border bg-accent; }
 .cs-loading-court > div:nth-child(3) { @apply h-11; }
 .cs-loading-court > div:last-child { @apply h-24; }
 .cs-loading-sheet { @apply grid gap-4 py-4; }
@@ -247,8 +249,8 @@
 .cs-history-date { @apply min-w-14 shrink-0 font-mono text-base font-medium tracking-tight; }
 .cs-history-session > svg { @apply ml-auto; }
 .cs-history-detail > .cs-help { @apply mb-5; }
-.cs-court-outline { @apply mb-4 h-20 w-32 border-primary/50 opacity-70; }
-.cs-court-outline::before, .cs-court-outline::after, .cs-court-outline.cs-decorative-court > span { @apply border-primary/50; }
+.cs-court-outline { @apply mb-4 h-20 w-32 border-input; }
+.cs-court-outline::before, .cs-court-outline::after, .cs-court-outline.cs-decorative-court > span { @apply border-input; }
 .cs-app .cs-stats-note { @apply mb-5 max-w-xl text-xs leading-relaxed text-muted-foreground md:mb-7 md:text-[13px]; }
 .cs-stats-table-wrap { @apply w-full overflow-x-auto; }
 .cs-stats-table { @apply w-full table-fixed border-collapse tabular-nums; }
