@@ -242,7 +242,7 @@
 .cs-history-grid { @apply grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] md:gap-10; }
 .cs-history-list { @apply border-t; }
 .cs-history-session { @apply flex min-h-20 w-full items-center gap-4 border-b px-3 py-4 text-left md:min-h-24; }
-.cs-history-session.is-selected { @apply bg-accent; box-shadow: inset 3px 0 0 var(--primary); }
+.cs-history-session.is-selected { @apply bg-accent; box-shadow: inset 3px 0 0 var(--foreground); }
 .cs-history-session > span { @apply min-w-0; }
 .cs-history-session strong { @apply block text-[13px] font-medium; }
 .cs-history-session small { @apply mt-1 block text-[11px] font-normal text-muted-foreground; }
@@ -267,8 +267,8 @@
 .cs-stats-table .cs-rank sup { @apply top-0 ml-px text-[8px] font-medium md:text-[9px]; }
 .cs-stats-table .cs-rank.is-top { @apply border-transparent; }
 .cs-stats-table .cs-rank.is-1 { @apply bg-primary text-primary-foreground; }
-.cs-stats-table .cs-rank.is-2 { @apply bg-primary/70 text-primary-foreground; }
-.cs-stats-table .cs-rank.is-3 { @apply bg-accent text-accent-foreground; }
+.cs-stats-table .cs-rank.is-2 { @apply bg-rank-2 text-primary-foreground; }
+.cs-stats-table .cs-rank.is-3 { @apply border-foreground bg-transparent text-foreground; }
 .cs-stats-table .cs-rank.is-none { @apply border-dashed; }
 .cs-stats-table tbody th > span:not(.cs-rank) { @apply block overflow-hidden; }
 .cs-stats-table .cs-stat-wins { @apply font-semibold; }
@@ -328,7 +328,7 @@
 .cs-season-timer strong { @apply mr-1 font-mono text-3xl font-semibold text-foreground; }
 .cs-season-timer small { @apply text-xs text-muted-foreground; }
 .cs-season-bar { @apply my-1 h-1.5 overflow-hidden rounded-full bg-muted; }
-.cs-season-bar span { @apply block h-full rounded-full bg-primary; }
+.cs-season-bar span { @apply block h-full rounded-full bg-win; }
 .cs-segment-wrap { @apply grid grid-cols-3 md:inline-flex; }
 .cs-segment-wrap button { @apply whitespace-nowrap px-2 md:px-3; }
 .cs-date-range label { @apply grid flex-1 gap-1.5; }
@@ -369,7 +369,7 @@
 .cs-stats-table thead th abbr { @apply no-underline; }
 .cs-th { @apply inline-flex flex-col items-end gap-1 md:flex-row md:items-center; }
 .cs-th-help { @apply inline-flex size-4 items-center justify-center rounded-full border border-input font-sans text-[9px] leading-none font-semibold text-muted-foreground md:size-[18px] md:text-[10px]; }
-.cs-th-help[aria-expanded="true"] { @apply border-primary bg-primary text-primary-foreground; }
+.cs-th-help[aria-expanded="true"] { @apply border-foreground bg-accent text-foreground; }
 .cs-formats-line { @apply mt-1 block font-mono text-[10px] font-normal text-muted-foreground md:text-[11px]; }
 .cs-legend { @apply mt-4 rounded border bg-card px-4 py-3; }
 .cs-legend h3 { @apply text-base; }
@@ -409,7 +409,7 @@
 
 .cs-mini-form b { @apply inline-block size-2 rounded-full; }
 .cs-mini-form b.is-win { @apply bg-win; }
-.cs-mini-form b.is-loss { @apply bg-destructive/70; }
+.cs-mini-form b.is-loss { @apply bg-destructive/80; }
 .cs-pd-hero { @apply rounded-lg bg-court px-4 py-4 text-court-foreground; }
 .cs-pd-title { @apply font-mono text-[11px] font-semibold tracking-[.18em] uppercase opacity-80; }
 .cs-pd-tagline { @apply mt-1 text-lg leading-snug font-semibold text-balance; }
