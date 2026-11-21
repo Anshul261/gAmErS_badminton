@@ -20,6 +20,16 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-rank-2: var(--rank-2);
+  --color-rank-3: var(--rank-3);
+  --color-gold: var(--gold);
+  --color-win: var(--win);
+  --color-win-foreground: var(--win-foreground);
+  --color-court: var(--court);
+  --color-court-foreground: var(--court-foreground);
+  --color-court-accent: var(--court-accent);
+  --color-court-line: var(--court-line);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -36,30 +46,40 @@
 }
 
 :root {
-  --background: #f6f5ef;
-  --foreground: #253c32;
-  --card: #fffef9;
-  --card-foreground: #253c32;
-  --popover: #fffef9;
-  --popover-foreground: #253c32;
-  --primary: #1e4d3b;
-  --primary-foreground: #fffef9;
-  --secondary: #eeede6;
-  --secondary-foreground: #253c32;
-  --muted: #eeede6;
-  --muted-foreground: #616c63;
-  --accent: #dce9df;
-  --accent-foreground: #1e4d3b;
-  --destructive: #943f36;
-  --border: #d9ddd3;
-  --input: #bac5bb;
-  --ring: #356e53;
+  --background: #000000;
+  --foreground: #ededed;
+  --card: #0a0a0a;
+  --card-foreground: #ededed;
+  --popover: #0a0a0a;
+  --popover-foreground: #ededed;
+  --primary: #ededed;
+  --primary-foreground: #0a0a0a;
+  --primary-hover: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ededed;
+  --muted: #171717;
+  --muted-foreground: #a1a1a1;
+  --accent: #1f1f1f;
+  --accent-foreground: #ededed;
+  --destructive: #ff6166;
+  --border: #262626;
+  --input: #333333;
+  --ring: #ededed;
+  --win: #4ade80;
+  --win-foreground: #052e16;
+  --court: #0a0a0a;
+  --court-foreground: #ededed;
+  --court-accent: #4ade80;
+  --court-line: rgb(255 255 255 / 0.14);
+  --rank-2: #a1a1a1;
+  --rank-3: #cd7f5a;
+  --gold: #f5c451;
   --radius: 0.5rem;
 }
 
 @layer base {
   * { @apply border-border; }
-  html { @apply font-sans; }
+  html { @apply font-sans; color-scheme: dark; }
   body { @apply bg-background text-foreground antialiased; }
 }
 
@@ -97,7 +117,7 @@
 .cs-main { @apply mx-auto max-w-6xl px-5 pt-0 pb-5 md:px-6 md:pb-8 lg:px-9 xl:px-0; }
 .cs-page-heading { @apply flex items-center justify-between gap-3 py-4 md:items-end md:gap-6 md:pt-7 md:pb-6; }
 .cs-page-heading > div { @apply min-w-0; }
-.cs-eyebrow { @apply text-[9px] leading-normal font-semibold tracking-[.14em] text-muted-foreground md:text-[10px]; }
+.cs-eyebrow { @apply font-mono text-[11px] leading-normal font-semibold tracking-[.08em] text-muted-foreground uppercase; }
 .cs-page-heading .cs-eyebrow, .cs-session-heading .cs-eyebrow { @apply mb-1.5 md:mb-2; }
 .cs-tabs { @apply mb-7 flex gap-6 border-b; }
 .cs-tabs button { @apply flex min-h-13 items-center justify-center gap-2 border-b-[3px] border-transparent px-3 pt-2 pb-3 text-sm font-semibold text-muted-foreground; }
@@ -120,38 +140,43 @@
 .cs-label, .cs-field label, .cs-add-player > label { @apply mb-1.5 block text-xs font-semibold; }
 .cs-help { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-fieldset > .cs-help { @apply mb-2.5 md:mb-3; }
-.cs-court { @apply relative isolate grid grid-cols-2 gap-0 rounded border border-primary bg-primary p-2 text-primary-foreground md:p-2.5; }
-.cs-court::before { content: ""; position: absolute; inset: 8px 24px; border: 1px solid #ffffff35; pointer-events: none; z-index: -1; }
-.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border border-white/35 bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
-.cs-court-side.is-selected { @apply bg-white/5 text-accent; box-shadow: inset 0 0 0 2px var(--accent); }
-.cs-court-side:focus-visible { @apply -outline-offset-4 outline-primary-foreground; }
-.cs-court-side-label { @apply flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] uppercase; }
+.cs-court { --court-pad: 8px; padding: var(--court-pad); @apply relative isolate grid grid-cols-2 gap-0 rounded border border-court-line bg-court text-court-foreground md:[--court-pad:10px]; }
+.cs-court::before { content: ""; position: absolute; inset: var(--court-pad) 24px; border: 1px solid var(--court-line); pointer-events: none; z-index: -1; }
+.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border-0 bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
+.cs-court-side + .cs-court-side { border-left: 1px solid var(--court-line); }
+.cs-court-side.is-selected { @apply bg-court-foreground/5; box-shadow: inset 0 0 0 2px var(--court-accent); }
+.cs-court-side:focus-visible { @apply -outline-offset-4 outline-court-foreground; }
+.cs-court-side-label { @apply flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] text-muted-foreground uppercase; }
+.cs-court-side.is-selected .cs-court-side-label { @apply text-court-accent; }
 .cs-court-names { @apply text-base leading-snug font-medium tracking-tight wrap-anywhere lg:text-lg; }
-.cs-court-count { @apply font-mono text-[10px] text-accent tabular-nums; }
-.cs-net { @apply pointer-events-none absolute top-1/2 left-1/2 grid size-6 -translate-1/2 place-items-center rounded-full border border-accent/50 bg-primary font-mono text-[8px] font-medium text-accent; }
+.cs-court-count { @apply font-mono text-[10px] text-muted-foreground tabular-nums; }
+.cs-net { @apply pointer-events-none absolute top-1/2 left-1/2 grid size-6 -translate-1/2 place-items-center rounded-full border border-input bg-background font-mono text-[8px] font-medium text-muted-foreground; }
 .cs-chips { @apply mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2; }
 .cs-chip { @apply inline-flex min-h-11 max-w-full items-center justify-center gap-1.5 rounded border bg-card px-2.5 py-2 text-left text-xs leading-snug md:px-3; }
 .cs-chip > span:not(.cs-chip-side) { @apply min-w-0 wrap-anywhere; }
-.cs-chip.is-selected { @apply border-primary/50 bg-accent text-primary; }
-.cs-chip-side { @apply grid size-4.5 shrink-0 place-items-center rounded-xs bg-primary font-mono text-[10px] font-medium text-primary-foreground; }
+.cs-chip.is-selected { @apply border-foreground bg-accent text-foreground; }
+.cs-chip-add { @apply border-dashed text-muted-foreground; }
+.cs-chip-side { @apply grid size-4.5 shrink-0 place-items-center rounded-xs bg-win font-mono text-[10px] font-medium text-win-foreground; }
 .cs-between { @apply flex items-center justify-between gap-3; }
 .cs-score-fieldset { @apply relative border-t pt-2; }
 .cs-score-fieldset legend { @apply float-left mb-0 flex min-h-13 w-full items-center py-0 pr-36 pl-0; }
 .cs-target-row { @apply absolute top-2 right-0 gap-2; }
 .cs-segment { @apply inline-flex gap-0.5 rounded border bg-muted p-0.5; }
 .cs-segment button { @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-xs px-3 py-2 text-[13px] leading-snug font-medium text-muted-foreground; }
-.cs-segment button[aria-pressed="true"] { @apply bg-card text-primary; }
+.cs-segment button[aria-pressed="true"] { @apply bg-accent text-foreground; }
 .cs-scoreboard { @apply clear-both mt-2 mb-1.5 grid grid-cols-[minmax(0,1fr)_20px_minmax(0,1fr)] items-center gap-2 md:mb-2; }
 .cs-scoreboard > div { @apply min-w-0; }
 .cs-scoreboard label { @apply mb-1 block text-center text-[10px] font-semibold tracking-[.12em] uppercase; }
 .cs-score-input { @apply h-20 w-full min-w-0 rounded border border-input bg-card p-1 text-center font-mono text-[52px] leading-none font-medium tracking-[-.06em] text-foreground tabular-nums md:h-24 md:text-6xl; }
-.cs-score-input::placeholder { @apply text-input opacity-100; }
+.cs-score-input::placeholder { @apply text-muted-foreground/60 opacity-100; }
+.cs-score-input:focus { @apply border-ring; }
 .cs-score-input[aria-invalid="true"] { @apply border-destructive; }
 .cs-score-divider { @apply pt-4 text-center font-mono text-2xl font-normal text-muted-foreground; }
 .cs-centered { @apply text-center; }
 .cs-button { @apply inline-flex min-h-11 items-center justify-center gap-2.5 rounded border border-transparent px-4 py-2.5 text-center text-[13px] leading-snug font-semibold no-underline; }
-.cs-button-green { @apply bg-primary text-primary-foreground; }
-.cs-button-outline { @apply border-input bg-transparent text-primary; }
+.cs-button-primary { @apply bg-primary text-primary-foreground; }
+.cs-button-outline { @apply border-input bg-transparent text-foreground; }
+.cs-button-danger { @apply border-destructive/40 bg-transparent text-destructive; }
 .cs-save-button { @apply min-h-12 justify-between px-5 text-[15px]; }
 .cs-full { @apply w-full; }
 .cs-icon-button { @apply inline-flex size-11 min-w-11 items-center justify-center rounded text-inherit; }
@@ -159,14 +184,17 @@
 .cs-danger { @apply text-destructive; }
 .cs-form-status { @apply text-xs leading-normal text-primary; }
 .cs-form-status:empty { @apply hidden; }
-.cs-global-status { @apply pt-3 text-xs text-primary; }
-.cs-global-status:empty { @apply hidden; }
-.cs-error { @apply rounded-xs border-l-2 border-destructive bg-destructive/5 px-3 py-2.5 text-xs leading-normal text-destructive wrap-anywhere; }
+.cs-toasts { @apply pointer-events-none fixed inset-x-0 z-60 mx-auto grid max-w-md gap-2 px-4; bottom: calc(16px + env(safe-area-inset-bottom)); }
+.cs-toast { @apply pointer-events-auto flex items-center justify-between gap-2 rounded border border-input bg-card px-4 py-3 text-sm text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] wrap-anywhere animate-in fade-in-0 slide-in-from-bottom-2; }
+.cs-toast > span { @apply min-w-0; }
+.cs-toast > button { @apply shrink-0; }
+.cs-toast-error { @apply border-destructive/40 text-destructive; }
+.cs-error { @apply rounded-xs border-l-2 border-destructive bg-destructive/10 px-3 py-2.5 text-xs leading-normal text-destructive wrap-anywhere; }
 .cs-banner { @apply mt-3 mb-4 flex items-center justify-between gap-2 rounded border bg-muted px-3 py-2.5 text-xs text-foreground wrap-anywhere md:gap-3 md:px-4; }
 .cs-banner > span { @apply min-w-0; }
 .cs-banner > button { @apply shrink-0; }
 .cs-banner-warning { @apply border-input bg-muted text-foreground; }
-.cs-banner-error { @apply border-destructive/25 bg-destructive/5 text-destructive; }
+.cs-banner-error { @apply border-destructive/40 bg-destructive/10 text-destructive; }
 .cs-game-list ol { @apply m-0 list-none p-0; }
 .cs-game-row { @apply border-b pt-4 pb-2; content-visibility: auto; contain-intrinsic-size: auto 152px; }
 .cs-game-row:first-child { @apply pt-0; }
@@ -174,15 +202,13 @@
 .cs-result-side { @apply flex min-h-9 items-center justify-between gap-3 rounded-xs px-2 py-1 text-xs text-muted-foreground; }
 .cs-result-side > span { @apply wrap-anywhere; }
 .cs-result-side strong { @apply min-w-9 text-right font-mono text-2xl leading-tight font-medium text-muted-foreground tabular-nums; }
-.cs-result-side.is-winner { @apply bg-accent font-medium text-primary; }
-.cs-result-side.is-winner strong { @apply text-primary; }
+.cs-result-side.is-winner { @apply bg-accent font-medium text-win; }
+.cs-result-side.is-winner strong { @apply text-win; }
 .cs-game-actions { @apply flex justify-end gap-5; }
 .cs-game-actions .cs-text-button { @apply text-[11px] font-normal; }
 .cs-session-footer { @apply mt-6 grid gap-2.5; }
 .cs-session-footer .cs-help { @apply text-center; }
-.cs-late-attendee { @apply mt-4 border-t; }
 .cs-app summary { @apply min-h-11 cursor-pointer py-3 text-xs font-medium; }
-.cs-late-attendee .cs-help { @apply mt-2; }
 .cs-inline-form { @apply flex min-w-0 items-stretch gap-2; }
 .cs-inline-form > .cs-input { @apply min-w-0 flex-1; }
 .cs-inline-form > button { @apply shrink-0; }
@@ -195,26 +221,26 @@
 .cs-setup-target legend { @apply float-left w-full; }
 .cs-setup-target .cs-segment { @apply mt-2; }
 .cs-setup-target .cs-help { @apply mt-2 mb-0; }
-.cs-court-note { @apply relative overflow-hidden rounded bg-primary p-6 text-primary-foreground lg:p-8; }
-.cs-court-note .cs-eyebrow { @apply mt-6 text-accent; }
+.cs-court-note { @apply relative overflow-hidden rounded border bg-court p-6 text-court-foreground lg:p-8; }
+.cs-court-note .cs-eyebrow { @apply mt-6 text-court-accent; }
 .cs-court-note h3 { @apply mt-3 mb-4 text-[30px] leading-[1.12] tracking-tight; }
-.cs-court-note p:not(.cs-eyebrow) { @apply mt-3 text-xs leading-relaxed text-accent; }
-.cs-decorative-court { position: relative; width: 100%; height: 138px; border: 1px solid #dce9df80; background: transparent; }
-.cs-decorative-court::before { content: ""; position: absolute; inset: 0 12%; border-right: 1px solid #dce9df55; border-left: 1px solid #dce9df55; }
-.cs-decorative-court::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid #dce9dfb0; }
-.cs-decorative-court > span:first-child { position: absolute; top: 15%; bottom: 15%; left: 0; right: 0; border-top: 1px solid #dce9df55; border-bottom: 1px solid #dce9df55; }
-.cs-decorative-court > span:last-child { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid #dce9df55; }
+.cs-court-note p:not(.cs-eyebrow) { @apply mt-3 text-xs leading-relaxed text-court-foreground/80; }
+.cs-decorative-court { position: relative; width: 100%; height: 138px; border: 1px solid color-mix(in srgb, var(--court-foreground) 30%, transparent); background: transparent; }
+.cs-decorative-court::before { content: ""; position: absolute; inset: 0 12%; border-right: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); border-left: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
+.cs-decorative-court::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid color-mix(in srgb, var(--court-foreground) 40%, transparent); }
+.cs-decorative-court > span:first-child { position: absolute; top: 15%; bottom: 15%; left: 0; right: 0; border-top: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
+.cs-decorative-court > span:last-child { position: absolute; top: 0; bottom: 0; left: 50%; border-left: 1px solid color-mix(in srgb, var(--court-foreground) 18%, transparent); }
 .cs-court-note .cs-decorative-court { @apply mx-auto h-28 max-w-56 md:h-32 md:max-w-none; }
 .cs-empty { @apply flex min-h-56 flex-col items-center justify-center gap-3.5 px-6 py-14 text-center; }
 .cs-empty > p { @apply max-w-sm text-[13px] leading-relaxed text-muted-foreground; }
-.cs-empty > svg { @apply text-primary/70; }
+.cs-empty > svg { @apply text-muted-foreground; }
 .cs-empty-small { @apply min-h-0 px-3 py-8; }
 .cs-empty-small h3 { @apply text-base; }
 .cs-empty-small p { @apply text-xs; }
 .cs-loading-court { @apply grid w-full gap-3; }
 .cs-loading-court > div { @apply rounded bg-muted; }
 .cs-loading-court > div:first-child { @apply h-5 w-1/3; }
-.cs-loading-court > div:nth-child(2) { @apply h-32 border border-primary/10 bg-accent/60; }
+.cs-loading-court > div:nth-child(2) { @apply h-32 border bg-accent; }
 .cs-loading-court > div:nth-child(3) { @apply h-11; }
 .cs-loading-court > div:last-child { @apply h-24; }
 .cs-loading-sheet { @apply grid gap-4 py-4; }
@@ -224,15 +250,15 @@
 .cs-history-grid { @apply grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] md:gap-10; }
 .cs-history-list { @apply border-t; }
 .cs-history-session { @apply flex min-h-20 w-full items-center gap-4 border-b px-3 py-4 text-left md:min-h-24; }
-.cs-history-session.is-selected { @apply bg-accent; box-shadow: inset 3px 0 0 var(--primary); }
+.cs-history-session.is-selected { @apply bg-accent; box-shadow: inset 3px 0 0 var(--foreground); }
 .cs-history-session > span { @apply min-w-0; }
 .cs-history-session strong { @apply block text-[13px] font-medium; }
 .cs-history-session small { @apply mt-1 block text-[11px] font-normal text-muted-foreground; }
 .cs-history-date { @apply min-w-14 shrink-0 font-mono text-base font-medium tracking-tight; }
 .cs-history-session > svg { @apply ml-auto; }
 .cs-history-detail > .cs-help { @apply mb-5; }
-.cs-court-outline { @apply mb-4 h-20 w-32 border-primary/50 opacity-70; }
-.cs-court-outline::before, .cs-court-outline::after, .cs-court-outline.cs-decorative-court > span { @apply border-primary/50; }
+.cs-court-outline { @apply mb-4 h-20 w-32 border-input; }
+.cs-court-outline::before, .cs-court-outline::after, .cs-court-outline.cs-decorative-court > span { @apply border-input; }
 .cs-app .cs-stats-note { @apply mb-5 max-w-xl text-xs leading-relaxed text-muted-foreground md:mb-7 md:text-[13px]; }
 .cs-stats-table-wrap { @apply w-full overflow-x-auto; }
 .cs-stats-table { @apply w-full table-fixed border-collapse tabular-nums; }
@@ -242,19 +268,19 @@
 .cs-stats-table tbody td { @apply border-b px-0.5 py-4 text-right font-mono text-[12px] whitespace-nowrap md:px-3 md:py-5 md:text-base; }
 .cs-stats-table tbody th { @apply border-b px-2 py-4 text-left text-xs font-medium wrap-anywhere md:px-3 md:py-5 md:text-sm; }
 .cs-stats-table tbody th small { @apply mt-1 block text-[10px] font-normal text-muted-foreground; }
-.cs-stats-table tbody tr:first-child:not(.cs-stats-group) { @apply bg-accent/60; }
+.cs-stats-table tbody tr:first-child:not(.cs-stats-group) { @apply bg-gold/5; }
 .cs-stats-table tbody tr.cs-stats-group th { @apply border-b-2 border-input pt-8 pb-2 text-[10px] tracking-widest text-muted-foreground uppercase md:text-[11px]; }
 .cs-stats-table tbody tr.cs-stats-group th small { @apply tracking-normal normal-case; }
 .cs-stats-table .cs-rank { @apply float-left mt-px mr-2 inline-flex h-6 w-10 items-center justify-center rounded-full border border-input font-mono text-[11px] font-semibold text-muted-foreground tabular-nums md:mr-4 md:h-7 md:w-12 md:text-xs; }
 .cs-stats-table .cs-rank sup { @apply top-0 ml-px text-[8px] font-medium md:text-[9px]; }
 .cs-stats-table .cs-rank.is-top { @apply border-transparent; }
-.cs-stats-table .cs-rank.is-1 { @apply bg-primary text-primary-foreground; }
-.cs-stats-table .cs-rank.is-2 { @apply bg-primary/70 text-primary-foreground; }
-.cs-stats-table .cs-rank.is-3 { @apply bg-accent text-accent-foreground; }
+.cs-stats-table .cs-rank.is-1 { @apply bg-gold text-primary-foreground; }
+.cs-stats-table .cs-rank.is-2 { @apply bg-rank-2 text-primary-foreground; }
+.cs-stats-table .cs-rank.is-3 { @apply bg-rank-3 text-primary-foreground; }
 .cs-stats-table .cs-rank.is-none { @apply border-dashed; }
 .cs-stats-table tbody th > span:not(.cs-rank) { @apply block overflow-hidden; }
-.cs-stats-table .cs-stat-wins { @apply font-semibold; }
-.cs-positive { @apply text-primary; }
+.cs-stats-table .cs-stat-wins { @apply font-semibold text-win; }
+.cs-positive { @apply text-win; }
 .cs-stats-footnote { @apply py-5 text-[11px] md:text-xs; }
 .cs-people-grid { @apply grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)] lg:gap-16; }
 .cs-people-grid > div { @apply min-w-0; }
@@ -266,7 +292,7 @@
 .cs-roster .cs-icon-button { @apply text-muted-foreground; }
 .cs-archived { @apply mt-3.5; }
 .cs-archived ul { @apply mt-1 mb-3 grid list-none gap-2 p-0 text-[13px] text-muted-foreground wrap-anywhere; }
-.cs-invite-panel { @apply rounded bg-accent/60 p-6 lg:p-7; }
+.cs-invite-panel { @apply rounded border bg-card p-6 lg:p-7; }
 .cs-invite-symbol { @apply mb-6 inline-flex gap-0.5; }
 .cs-invite-panel h3 { @apply mt-2.5 mb-4 text-2xl; }
 .cs-invite-panel > p:not(.cs-eyebrow):not(.cs-help) { @apply mb-4 text-[13px] leading-relaxed; }
@@ -277,22 +303,33 @@
 .cs-footer { @apply mt-10 flex justify-between gap-4 border-t pt-5 text-[10px] text-muted-foreground md:mt-14 md:pt-6; }
 .cs-footer span:first-child { @apply text-sm font-semibold tracking-tight; }
 .cs-actions { @apply flex flex-wrap justify-center gap-2.5; }
-.cs-dialog { @apply max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] max-w-[460px] overflow-y-auto overscroll-contain rounded-lg bg-card px-5 py-6 font-sans text-foreground md:p-6; }
-.cs-dialog [data-slot="dialog-title"] { @apply pr-8 text-2xl leading-tight font-semibold tracking-tight; }
-.cs-dialog [data-slot="dialog-description"] { @apply text-xs leading-relaxed text-muted-foreground; }
+.cs-dialog { @apply max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] max-w-[460px] overflow-y-auto overscroll-contain rounded-lg bg-card px-5 py-6 font-sans text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] md:p-6; }
+.cs-dialog :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) { @apply pr-8 text-2xl leading-tight font-semibold tracking-tight; }
+.cs-dialog :is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-dialog [data-slot="dialog-close"] { @apply min-h-11 min-w-11; }
+.cs-confirm-dialog { @apply max-w-[400px] gap-5; }
+.cs-confirm-dialog [data-slot="alert-dialog-title"] { @apply pr-0 text-xl; }
+.cs-confirm-dialog [data-slot="alert-dialog-description"] { @apply text-sm; }
+.cs-confirm-dialog [data-slot="alert-dialog-footer"] { @apply gap-2.5; }
+.cs-add-dialog { @apply max-w-[460px] gap-4; }
+.cs-add-body { @apply grid gap-4; }
+.cs-add-body .cs-chips { @apply mt-0; }
+.cs-add-new { @apply justify-start; }
 .cs-edit-dialog { @apply max-w-[530px]; }
 .cs-edit-dialog .cs-game-form { @apply mt-2; }
 .cs-edit-dialog .cs-court-side { @apply md:min-h-28; }
 
 @media (hover: hover) {
-  .cs-button-green:hover:not(:disabled) { @apply bg-[#173f30]; }
+  .cs-button-primary:hover:not(:disabled) { @apply bg-primary-hover; }
   .cs-button-outline:hover:not(:disabled), .cs-icon-button:hover:not(:disabled), .cs-chip:hover:not(:disabled) { @apply bg-accent; }
+  .cs-button-danger:hover:not(:disabled) { @apply bg-destructive/10; }
+  .cs-chip-add:hover:not(:disabled) { @apply border-solid text-foreground; }
   .cs-text-button:hover:not(:disabled) { @apply underline underline-offset-4; }
   .cs-history-session:hover { @apply bg-accent/60; }
 }
 
 @media (width < 48rem) {
+  .cs-toasts { bottom: calc(82px + 12px + env(safe-area-inset-bottom)); }
   .cs-app { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
   .cs-tabs { @apply fixed inset-x-0 bottom-0 z-30 m-0 grid grid-cols-5 gap-0 border-t border-b-0 bg-background px-3 pt-1.5; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
   .cs-tabs button { @apply min-h-14 flex-col gap-1 rounded border-0 px-1 py-1.5 text-[11px]; }
@@ -310,7 +347,7 @@
 .cs-season-timer strong { @apply mr-1 font-mono text-3xl font-semibold text-foreground; }
 .cs-season-timer small { @apply text-xs text-muted-foreground; }
 .cs-season-bar { @apply my-1 h-1.5 overflow-hidden rounded-full bg-muted; }
-.cs-season-bar span { @apply block h-full rounded-full bg-primary; }
+.cs-season-bar span { @apply block h-full rounded-full bg-win; }
 .cs-segment-wrap { @apply grid grid-cols-3 md:inline-flex; }
 .cs-segment-wrap button { @apply whitespace-nowrap px-2 md:px-3; }
 .cs-date-range label { @apply grid flex-1 gap-1.5; }
@@ -333,7 +370,7 @@
 .cs-faq p { @apply mt-2 text-sm leading-relaxed text-muted-foreground; }
 .cs-logged-by { @apply rounded-xs bg-muted px-1.5 py-0.5 normal-case tracking-normal; }
 .cs-logged-by.is-mine { @apply bg-accent text-primary; }
-.cs-you-card { @apply mb-6 border-b border-primary/15 pb-6; }
+.cs-you-card { @apply mb-6 border-b pb-6; }
 .cs-you-card .cs-inline-form { @apply mt-2; }
 .cs-you-card .cs-help { @apply mt-3; }
 .cs-venue { @apply -mt-1 mb-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm; }
@@ -351,7 +388,7 @@
 .cs-stats-table thead th abbr { @apply no-underline; }
 .cs-th { @apply inline-flex flex-col items-end gap-1 md:flex-row md:items-center; }
 .cs-th-help { @apply inline-flex size-4 items-center justify-center rounded-full border border-input font-sans text-[9px] leading-none font-semibold text-muted-foreground md:size-[18px] md:text-[10px]; }
-.cs-th-help[aria-expanded="true"] { @apply border-primary bg-primary text-primary-foreground; }
+.cs-th-help[aria-expanded="true"] { @apply border-foreground bg-accent text-foreground; }
 .cs-formats-line { @apply mt-1 block font-mono text-[10px] font-normal text-muted-foreground md:text-[11px]; }
 .cs-legend { @apply mt-4 rounded border bg-card px-4 py-3; }
 .cs-legend h3 { @apply text-base; }
@@ -368,7 +405,7 @@
 .cs-pd { @apply grid gap-4; }
 .cs-pd-form { @apply flex flex-wrap items-center gap-1; }
 .cs-pd-form > span { @apply inline-flex size-6 items-center justify-center rounded font-mono text-[10px] font-semibold; }
-.cs-pd-form > span.is-win { @apply bg-primary text-primary-foreground; }
+.cs-pd-form > span.is-win { @apply bg-win text-win-foreground; }
 .cs-pd-form > span.is-loss { @apply border border-destructive/40 text-destructive; }
 .cs-pd-form small { @apply ml-1 text-xs text-muted-foreground; }
 .cs-pd-tiles { @apply m-0 grid grid-cols-2 gap-2 md:grid-cols-4; }
@@ -390,15 +427,15 @@
 .cs-pd-h2h .cs-eyebrow { @apply mt-1; }
 
 .cs-mini-form b { @apply inline-block size-2 rounded-full; }
-.cs-mini-form b.is-win { @apply bg-primary; }
-.cs-mini-form b.is-loss { @apply bg-destructive/70; }
-.cs-pd-hero { @apply rounded-lg bg-primary px-4 py-4 text-primary-foreground; }
-.cs-pd-title { @apply font-mono text-[11px] font-semibold tracking-[.18em] uppercase opacity-80; }
+.cs-mini-form b.is-win { @apply bg-win; }
+.cs-mini-form b.is-loss { @apply bg-destructive/80; }
+.cs-pd-hero { @apply rounded-lg border border-court-line bg-court px-4 py-4 text-court-foreground; }
+.cs-pd-title { @apply font-mono text-[11px] font-semibold tracking-[.08em] text-muted-foreground uppercase; }
 .cs-pd-tagline { @apply mt-1 text-lg leading-snug font-semibold text-balance; }
 .cs-pd-hero .cs-pd-form { @apply mt-3; }
-.cs-pd-hero .cs-pd-form > span.is-win { @apply bg-primary-foreground text-primary; }
-.cs-pd-hero .cs-pd-form > span.is-loss { @apply border-primary-foreground/40 text-primary-foreground/80; }
-.cs-pd-hero .cs-pd-form small { @apply text-primary-foreground/80; }
+.cs-pd-hero .cs-pd-form > span.is-win { @apply bg-win text-win-foreground; }
+.cs-pd-hero .cs-pd-form > span.is-loss { @apply border-destructive/40 text-destructive; }
+.cs-pd-hero .cs-pd-form small { @apply text-court-foreground/80; }
 .cs-mo { @apply mt-3; }
 .cs-mo-readout { @apply grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 rounded-md bg-muted px-3 py-2 text-xs; }
 .cs-mo-game { @apply font-mono text-[10px] text-muted-foreground; }
@@ -409,10 +446,12 @@
 .cs-mo-plot svg { @apply absolute inset-0 size-full overflow-visible; }
 .cs-mo-zero { stroke: var(--input); stroke-width: 1; }
 .cs-mo-session { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
-.cs-mo-area { fill: color-mix(in oklab, var(--primary) 10%, transparent); }
-.cs-mo-line { fill: none; stroke: var(--primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cs-mo-area { fill: color-mix(in oklab, var(--win) 14%, transparent); }
+.is-down > .cs-mo-area { fill: color-mix(in oklab, var(--destructive) 14%, transparent); }
+.cs-mo-line { fill: none; stroke: var(--win); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.is-down > .cs-mo-line { stroke: var(--destructive); }
 .cs-mo-dot { @apply pointer-events-none absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card; }
-.cs-mo-dot.is-win { @apply bg-primary; }
+.cs-mo-dot.is-win { @apply bg-win; }
 .cs-mo-dot.is-loss { @apply bg-destructive; }
 .cs-mo-peak { @apply pointer-events-none absolute -translate-x-1/2 -translate-y-[calc(100%+6px)] rounded bg-card px-1 font-mono text-[10px] whitespace-nowrap text-muted-foreground; }
 .cs-mo-scale { @apply pointer-events-none absolute inset-y-0 -left-5 flex flex-col justify-between font-mono text-[9px] text-muted-foreground; }
@@ -425,12 +464,20 @@
 .cs-awards { @apply mb-5; }
 .cs-awards ul { @apply -mx-4 m-0 flex list-none snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4; }
 .cs-awards li { @apply flex w-[46%] shrink-0 snap-start flex-col rounded-lg border bg-card px-3 py-3 md:w-auto; }
-.cs-awards li:first-child { @apply border-primary bg-primary text-primary-foreground; }
-.cs-awards li:first-child :is(small, .cs-award-name, .cs-dim) { @apply text-primary-foreground/80; }
-.cs-awards li:first-child .cs-player-link { @apply decoration-primary-foreground/50; }
 .cs-award-name { @apply font-mono text-[10px] font-semibold tracking-[.14em] text-muted-foreground uppercase; }
 .cs-award-who { @apply mt-2 text-sm leading-snug font-semibold wrap-anywhere; }
 .cs-award-value { @apply mt-1 font-mono text-lg font-semibold tabular-nums; }
+/* Result colour: green = good, red = bad, gold = records. Value text, a 2px top bar and a faint tint. */
+.cs-pd-tiles > div.is-good, .cs-pd-trophies li.is-good, .cs-awards li.is-good { @apply border-t-2 border-t-win bg-win/5; }
+.cs-pd-tiles > div.is-bad, .cs-pd-trophies li.is-bad, .cs-awards li.is-bad { @apply border-t-2 border-t-destructive bg-destructive/5; }
+.cs-pd-trophies li.is-record, .cs-awards li.is-record, .cs-awards li:first-child { @apply border-t-2 border-t-gold bg-gold/5; }
+:is(.cs-pd-tiles > div, .cs-pd-trophies li, .cs-awards li).is-good :is(dd, strong, .cs-award-value) { @apply text-win; }
+:is(.cs-pd-tiles > div, .cs-pd-trophies li, .cs-awards li).is-bad :is(dd, strong, .cs-award-value) { @apply text-destructive; }
+:is(.cs-pd-trophies li, .cs-awards li).is-record :is(strong, .cs-award-value), .cs-awards li:first-child .cs-award-value { @apply text-gold; }
+.cs-pd-list.is-good .cs-pd-rank { @apply bg-win/15 text-win; }
+.cs-pd-list.is-good .cs-pd-name small { @apply text-win; }
+.cs-pd-list.is-bad .cs-pd-rank { @apply bg-destructive/15 text-destructive; }
+.cs-pd-list.is-bad .cs-pd-name small { @apply text-destructive; }
 .cs-awards small { @apply mt-1 text-[11px] leading-snug text-muted-foreground; }
 
 .cs-player-search { @apply relative mt-3 flex items-center; }
@@ -444,7 +491,7 @@
 .cs-mf-suggest button { @apply min-h-9 rounded-full border bg-card px-3 text-xs text-foreground; }
 .cs-mf-filters { @apply -mx-3 flex gap-1.5 overflow-x-auto px-3 [scrollbar-width:none] md:mx-0 md:px-0; }
 .cs-mf-filters button { @apply min-h-9 shrink-0 rounded-full border bg-card px-3.5 text-xs font-medium; }
-.cs-mf-filters button[aria-pressed="true"] { @apply border-primary bg-primary text-primary-foreground; }
+.cs-mf-filters button[aria-pressed="true"] { @apply border-foreground bg-accent text-foreground; }
 .cs-mf-list { @apply m-0 list-none p-0; }
 .cs-mf-list li + li { @apply border-t; }
 .cs-mf-list button { @apply flex min-h-14 w-full items-center gap-3 bg-transparent py-2 text-left; }
@@ -454,5 +501,5 @@
 .cs-mf-who small { @apply block font-mono text-[10px] text-muted-foreground; }
 .cs-mf-score { @apply flex shrink-0 items-center gap-1.5 font-mono text-sm font-semibold tabular-nums; }
 .cs-mf-score b { @apply inline-flex size-5 items-center justify-center rounded text-[10px]; }
-.cs-mf-score.is-win b { @apply bg-primary text-primary-foreground; }
+.cs-mf-score.is-win b { @apply bg-win text-win-foreground; }
 .cs-mf-score.is-loss b { @apply border border-destructive/40 text-destructive; }

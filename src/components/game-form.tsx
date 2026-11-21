@@ -14,9 +14,11 @@ type GameFormProps = {
   disabled?: boolean;
   onSave: (input: GameInput, original?: Game) => Promise<void>;
   onPendingChange?: (pending: boolean) => void;
+  /** When set, the form offers an "Add to session" chip and opens the add dialog with the given search. */
+  onAddPlayers?: (query: string) => void;
 };
 
-export function GameForm({ session, players, game, offline, disabled = false, onSave, onPendingChange }: GameFormProps) {
+export function GameForm({ session, players, game, offline, disabled = false, onSave, onPendingChange, onAddPlayers }: GameFormProps) {
   const prefix = useId();
   const [side, setSide] = useState<"a" | "b">("a");
   const [teamA, setTeamA] = useState<string[]>(() => game ? [game.side_a_player_1, game.side_a_player_2].filter((id): id is string => Boolean(id)) : []);
@@ -175,8 +177,9 @@ export function GameForm({ session, players, game, offline, disabled = false, on
               </button>
             );
           })}
+          {onAddPlayers ? <button type="button" className="cs-chip cs-chip-add" onClick={() => onAddPlayers("")}><PlusIcon width={15} height={15} aria-hidden="true" /><span>Add to session</span></button> : null}
         </div>
-        {needle && !matches.length ? <p className="cs-help" role="status">No one called &quot;{query.trim()}&quot; in this session. Add them under &quot;Someone joined late?&quot;.</p> : null}
+        {needle && !matches.length ? <p className="cs-help" role="status">No one called &quot;{query.trim()}&quot; in this session.{onAddPlayers ? <> <button type="button" className="cs-text-button" onClick={() => onAddPlayers(query.trim())}>Add them</button></> : null}</p> : null}
         {!players.length ? <p className="cs-help">Add attendees to this session before logging a game.</p> : null}
       </fieldset>
 
@@ -209,7 +212,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
       {error ? <p className="cs-error" id={`${prefix}-error`} role="alert">{error}</p> : null}
       {/expired|sign.?in|jwt|auth/i.test(error) ? <Link className="cs-text-button" href="/login">Sign in again</Link> : null}
       <p className="cs-form-status" role="status" aria-live="polite">{notice}</p>
-      <button className="cs-button cs-button-green cs-save-button" type="submit" disabled={locked || offline}>
+      <button className="cs-button cs-button-primary cs-save-button" type="submit" disabled={locked || offline}>
         {pending ? "Saving game..." : game ? "Save correction" : "Save game"}<CheckIcon width={18} height={18} aria-hidden="true" />
       </button>
       {offline ? <p className="cs-help">Syncing paused. Your unsaved draft stays here while this page is open.</p> : null}

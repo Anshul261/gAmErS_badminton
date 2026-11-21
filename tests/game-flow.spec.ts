@@ -27,8 +27,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
   const gameForm = page.getByRole("form", { name: "Log game", exact: true });
   await expect(setup.or(gameForm)).toBeVisible();
   if (await gameForm.isVisible()) {
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Another session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Leave session", exact: true }).click();
   }
   await expect(setup).toBeVisible();
   for (const name of [riya, sam, jay]) await setup.getByRole("button", { name, exact: true }).click();
@@ -36,16 +36,16 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
   await expect(gameForm).toBeVisible();
 
   // A second court runs at the same time and each phone picks which one it logs for.
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Another session", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Leave session", exact: true }).click();
   const courts = page.getByRole("region", { name: "Play", exact: true }).getByRole("list", { name: "On court or planned" });
   await expect(courts.getByRole("listitem").filter({ hasText: trio })).toBeVisible();
   for (const name of [sam, jay]) await setup.getByRole("button", { name, exact: true }).click();
   await setup.getByRole("button", { name: "Start session with 2" }).click();
   await expect(gameForm).toBeVisible();
   await expect(page.getByText(/\d+ sessions are on court/)).toBeVisible();
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Switch", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Leave session", exact: true }).click();
   await courts.getByRole("listitem").filter({ hasText: trio }).getByRole("button", { name: "Open" }).click();
   await expect(gameForm).toBeVisible();
   await expect(page.getByText("3 playing", { exact: true })).toBeVisible();
@@ -55,8 +55,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
   await expect(page.getByText("3 playing", { exact: true })).toBeVisible();
 
   // Plan a session for next week with a place and a Waze link; nobody is in yet.
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Another session", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Leave session", exact: true }).click();
   const venue = `Court ${suffix}`;
   await setup.getByLabel("Date", { exact: true }).fill("2030-01-05");
   await setup.getByLabel("Time (optional)", { exact: true }).fill("19:30");
@@ -74,8 +74,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
   await whosHere.getByRole("button", { name: sam, exact: true }).click();
   await expect(page.getByRole("form", { name: "Log game", exact: true })).toBeVisible();
   // The picker lists it as planned, with the place.
-  page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Another session", exact: true }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Leave session", exact: true }).click();
   await expect(courts.getByRole("listitem").filter({ hasText: `${riya}, ${sam}` }).filter({ hasText: `Planned Sat, 5 Jan 2030 · 19:30 · ${venue}` })).toBeVisible();
   // Back to the trio's court for the rest of the flow.
   await courts.getByRole("listitem").filter({ hasText: trio }).getByRole("button", { name: "Open" }).click();
@@ -125,8 +125,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await expect(otherCorrection.getByRole("alert")).toContainText("changed on another phone");
     await otherCorrection.getByRole("button", { name: "Close", exact: true }).click();
 
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
     await nav.getByRole("button", { name: "History", exact: true }).click();
     const filter = page.getByRole("group", { name: "Show sessions from" });
@@ -146,8 +146,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     // Riya beat Sam + Jay solo (a 1v2), then Riya/Sam beat Jay 2v1. Everyone is new, so all three are Provisional.
     await expect(table.getByRole("row").filter({ hasText: riya })).toContainText("100%");
     await expect(table.getByRole("row").filter({ hasText: sam })).toContainText("0%");
-    await expect(table.getByRole("columnheader", { name: /Skill/ })).toBeVisible();
-    await page.getByRole("button", { name: "What does Skill mean?" }).click();
+    await expect(table.getByRole("columnheader", { name: /Season score/ })).toBeVisible();
+    await page.getByRole("button", { name: "What does Season score mean?" }).click();
     await expect(page.getByRole("region", { name: "Column meaning" })).toContainText("Higher is better");
     await expect(table.getByRole("rowheader", { name: /Provisional/ })).toBeVisible();
     await expect(page.getByRole("group", { name: "Season" }).getByRole("button", { name: "All time" })).toBeVisible();
@@ -156,8 +156,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await nav.getByRole("button", { name: "Play", exact: true }).click();
     await page.getByRole("button", { name: "Set up next session", exact: true }).click();
     await courts.getByRole("listitem").filter({ hasText: duo }).getByRole("button", { name: "Open" }).click();
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
     // A forgotten game: reopen the trio's session from History, log it, finish again.
     await nav.getByRole("button", { name: "History", exact: true }).click();
@@ -178,8 +178,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await gameForm.getByLabel("Side B", { exact: true }).fill("15");
     await gameForm.getByRole("button", { name: "Save game", exact: true }).click();
     await expect(page.getByText("2 games logged", { exact: true })).toBeVisible();
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
     // The FAQ tab is plain reading.
     await nav.getByRole("button", { name: "FAQ", exact: true }).click();
@@ -191,18 +191,18 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     await nav.getByRole("button", { name: "Play", exact: true }).click();
     await page.getByRole("button", { name: "Set up next session", exact: true }).click();
     await courts.getByRole("listitem").filter({ hasText: venue }).getByRole("button", { name: "Open" }).click();
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Finish session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Finish session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "That's a session." })).toBeVisible();
     await nav.getByRole("button", { name: "History", exact: true }).click();
     await page.getByRole("button", { name: `Session finished ${riya}, ${sam} · ${venue}`, exact: false }).click();
-    page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: "Delete this session", exact: true }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete session", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Every session has a story." })).toBeVisible();
     for (const who of [trio, duo]) {
       await page.getByRole("button", { name: `Session finished ${who} · Games to`, exact: false }).click();
-      page.once("dialog", (dialog) => dialog.accept());
       await page.getByRole("button", { name: "Delete this session", exact: true }).click();
+      await page.getByRole("alertdialog").getByRole("button", { name: "Delete session", exact: true }).click();
       await expect(page.getByRole("heading", { name: "Every session has a story." })).toBeVisible();
     }
     await expect(page.getByRole("button", { name: trio, exact: false })).toHaveCount(0);
