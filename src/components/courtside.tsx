@@ -8,7 +8,8 @@ import { GameForm } from "@/components/game-form";
 import { PlayerDashboard } from "@/components/player-dashboard";
 import { CourtProvider } from "@/components/court/context";
 import type { Tab } from "@/components/court/context";
-import { addAttendee, addPlayer, archivePlayer, deleteGame, deleteSession, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, reopenSession, saveGame, startSession, updateProfile, updateSession } from "@/lib/data";
+import { GameList } from "@/components/court/game-list";
+import { addAttendee, addPlayer, archivePlayer, deleteSession, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, reopenSession, saveGame, startSession, updateProfile, updateSession } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { dubaiDate, dubaiToday, mapLabel, shortTime } from "@/lib/scoring";
 import { PROVISIONAL_GAMES, crewAwards, playerDashboard, seasonPerformance } from "@/lib/player-stats";
@@ -133,7 +134,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
     return <div className="cs-season-timer" role="status"><p className="cs-eyebrow">SEASON {current.number} · ENDS {dubaiDate(current.to).toUpperCase()}</p><p>{left ? <><strong>{left}</strong> {left === 1 ? "day" : "days"} to go</> : <strong>Final day</strong>}</p><div className="cs-season-bar" aria-hidden="true"><span style={{ width: `${Math.round((length - left) / length * 100)}%` }} /></div><small>Then the table resets and everyone starts level. This season stays viewable.</small></div>;
   };
   const isPlanned = (session: Session) => !session.ended_at && session.session_date > dubaiToday();
-  const loggedBy = (id: string) => workspace?.profiles[id] ?? "a friend";
   const whoPlayed = (id: string) => (attendance[id] ?? []).map((playerId) => names.get(playerId) ?? "Archived player").sort((a, b) => a.localeCompare(b));
   const locked = Boolean(busy) || gamePending;
   const history = [...(workspace?.sessions ?? []), ...olderSessions].filter((session, index, all) => all.findIndex((item) => item.id === session.id) === index);
@@ -362,36 +362,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
     } catch { setError("Copy was blocked. Share the address from your browser instead."); }
   }
 
-  function gameList(data: SessionData) {
-    const games = [...data.games].reverse();
-    return <div className="cs-game-list">
-      {games.length ? <ol>
-        {games.slice(0, gameLimit).map((game, index) => {
-          const sideA = [game.side_a_player_1, game.side_a_player_2].filter(Boolean).map((id) => names.get(id!) ?? "Archived player").join(" + ");
-          const sideB = [game.side_b_player_1, game.side_b_player_2].filter(Boolean).map((id) => names.get(id!) ?? "Archived player").join(" + ");
-          return <li className="cs-game-row" key={game.id}>
-            <div className="cs-game-meta"><span>GAME {String(games.length - index).padStart(2, "0")}</span><span className={`cs-logged-by ${game.created_by === userId ? "is-mine" : ""}`}>by {game.created_by === userId ? "you" : loggedBy(game.created_by)}</span><span>TO {game.target_score}</span></div>
-            <div className={`cs-result-side ${game.score_a > game.score_b ? "is-winner" : ""}`}><span>{sideA}{game.score_a > game.score_b ? <span className="cs-sr-only">, winner</span> : null}</span><strong>{game.score_a}</strong></div>
-            <div className={`cs-result-side ${game.score_b > game.score_a ? "is-winner" : ""}`}><span>{sideB}{game.score_b > game.score_a ? <span className="cs-sr-only">, winner</span> : null}</span><strong>{game.score_b}</strong></div>
-            {!frozen(data.session.session_date) ? <div className="cs-game-actions">
-              <button type="button" className="cs-text-button" disabled={locked || offline} aria-label={`Edit game ${games.length - index}`} onClick={() => setEditingGame(game)}>Edit score</button>
-              <button type="button" className="cs-text-button cs-danger" disabled={locked || offline} aria-label={`Delete game ${games.length - index}`} onClick={() => {
-                if (window.confirm(`Delete the ${game.score_a}-${game.score_b} game between ${sideA} and ${sideB}? This cannot be undone.`)) void mutate("delete", async () => {
-                  await deleteGame(game.id);
-                  setSessions((current) => {
-                    const record = current[game.session_id];
-                    return record ? { ...current, [game.session_id]: { ...record, games: record.games.filter((item) => item.id !== game.id) } } : current;
-                  });
-                }, "Game deleted. Stats are refreshing.");
-              }}>Delete</button>
-            </div> : null}
-          </li>;
-        })}
-      </ol> : <div className="cs-empty cs-empty-small"><CheckCircledIcon width={28} height={28} aria-hidden="true" /><h3>No games on the sheet yet.</h3><p>Play your first game, then log the final score.</p></div>}
-      {games.length > gameLimit ? <button className="cs-button cs-button-outline cs-full" onClick={() => setGameLimit(gameLimit + 50)}>Show more games<ArrowDownIcon width={16} height={16} aria-hidden="true" /></button> : null}
-    </div>;
-  }
-
   return (
     <div className="cs-app">
       <a className="cs-skip-link" href="#main">Skip to content</a>
@@ -450,7 +420,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
                     void mutate("attendee", async () => { await addAttendee(playData.session, latePlayerId); setLatePlayerId(""); }, "Player added to this session.");
                   }}><label className="cs-sr-only" htmlFor="late-player">Add a late attendee</label><select className="cs-input" id="late-player" value={latePlayerId} onChange={(event) => setLatePlayerId(event.target.value)} disabled={locked} required><option value="">Choose a player</option>{roster.filter((player) => !playData.playerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.display_name}</option>)}</select><button className="cs-button cs-button-outline" type="submit" disabled={locked || offline || !latePlayerId}>Add</button></form><p className="cs-help">New face? Add their name in People first.</p></details> : null}
                 </div>
-                <aside className="cs-score-sheet"><div className="cs-section-heading"><h3>The score sheet</h3><span className="cs-count">{playData.games.length}</span></div>{gameList(playData)}<div className="cs-session-footer">{!playEnded ? <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={() => {
+                <aside className="cs-score-sheet"><div className="cs-section-heading"><h3>The score sheet</h3><span className="cs-count">{playData.games.length}</span></div><GameList data={playData} limit={gameLimit} onMore={() => setGameLimit(gameLimit + 50)} /><div className="cs-session-footer">{!playEnded ? <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={() => {
                   if (!window.confirm("Finish this session? Save any game draft first. Scores can still be corrected in History.")) return;
                   void mutate("finish", async () => {
                     await endSession(playData.session.id);
@@ -502,7 +472,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
                 setGameLimit(50);
                 setTab("play");
               }, "Session reopened. Log the game, then finish it again.");
-            }}><ReloadIcon width={17} height={17} aria-hidden="true" />{busy === "reopen" ? "Reopening..." : "Reopen session"}</button> : <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked} onClick={() => { if (openSession(selectedData.session.id)) setTab("play"); }}><PlayIcon width={17} height={17} aria-hidden="true" />Open on Play</button>}</>}{gameList(selectedData)}{!frozen(selectedData.session.session_date) ? <div className="cs-session-footer"><button type="button" className="cs-text-button cs-danger" disabled={locked || offline} onClick={() => {
+            }}><ReloadIcon width={17} height={17} aria-hidden="true" />{busy === "reopen" ? "Reopening..." : "Reopen session"}</button> : <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked} onClick={() => { if (openSession(selectedData.session.id)) setTab("play"); }}><PlayIcon width={17} height={17} aria-hidden="true" />Open on Play</button>}</>}<GameList data={selectedData} limit={gameLimit} onMore={() => setGameLimit(gameLimit + 50)} />{!frozen(selectedData.session.session_date) ? <div className="cs-session-footer"><button type="button" className="cs-text-button cs-danger" disabled={locked || offline} onClick={() => {
               const id = selectedData.session.id;
               if (!window.confirm(`Delete this whole session and its ${selectedData.games.length} ${selectedData.games.length === 1 ? "game" : "games"}? Stats will drop them. This cannot be undone.`)) return;
               void mutate("delete-session", async () => {
