@@ -13,6 +13,7 @@ export type Court = {
   locked: boolean;
   offline: boolean;
   busy: string;
+  error: string;
   mutate: (label: string, task: () => Promise<void>, success: string) => Promise<void>;
   setError: (message: string) => void;
   setTab: (tab: Tab) => void;
@@ -30,4 +31,19 @@ export function useCourt() {
   const court = useContext(CourtContext);
   if (!court) throw new Error("useCourt must be used inside CourtProvider.");
   return court;
+}
+
+export function message(cause: unknown) {
+  return cause instanceof Error ? cause.message : "Something went wrong. Please try again.";
+}
+
+// Each account remembers the court it is logging for, so a reload lands back on it.
+export function rememberedSession(userId: string) {
+  try { return window.localStorage.getItem(`courtside:session:${userId}`); } catch { return null; }
+}
+export function rememberSession(userId: string, id: string | null) {
+  try {
+    if (id) window.localStorage.setItem(`courtside:session:${userId}`, id);
+    else window.localStorage.removeItem(`courtside:session:${userId}`);
+  } catch { /* Private mode or a full store: the session still works, it just will not stick. */ }
 }

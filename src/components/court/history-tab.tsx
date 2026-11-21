@@ -2,7 +2,7 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { ArrowDownIcon, ChevronRightIcon, CounterClockwiseClockIcon, PlayIcon, ReloadIcon } from "@radix-ui/react-icons";
-import { useCourt } from "@/components/court/context";
+import { rememberSession, useCourt } from "@/components/court/context";
 import { GameList } from "@/components/court/game-list";
 import { deleteSession, reopenSession, updateSession } from "@/lib/data";
 import { dubaiDate, dubaiToday, shortTime } from "@/lib/scoring";
@@ -39,14 +39,13 @@ type HistoryTabProps = {
   setPlaySessionId: Dispatch<SetStateAction<string | null>>;
   setChoosing: (choosing: boolean) => void;
   setOlderSessions: Dispatch<SetStateAction<Session[]>>;
-  rememberSession: (id: string | null) => void;
   seasonList: Season[];
   whoPlayed: (sessionId: string) => string[];
   isPlanned: (session: Session) => boolean;
 };
 
-export function HistoryTab({ hidden, history, filteredHistory, range, setRange, customFrom, setCustomFrom, customTo, setCustomTo, rangeFrom, rangeTo, rangeIncomplete, historySessionId, setHistorySessionId, selectedData, selectedError, gameLimit, setGameLimit, loadMore, openSession, playData, playEnded, playSessionId, setPlaySessionId, setChoosing, setOlderSessions, rememberSession, seasonList, whoPlayed, isPlanned }: HistoryTabProps) {
-  const { locked, offline, busy, mutate, setError, setTab, setSessions, setWorkspace, frozen } = useCourt();
+export function HistoryTab({ hidden, history, filteredHistory, range, setRange, customFrom, setCustomFrom, customTo, setCustomTo, rangeFrom, rangeTo, rangeIncomplete, historySessionId, setHistorySessionId, selectedData, selectedError, gameLimit, setGameLimit, loadMore, openSession, playData, playEnded, playSessionId, setPlaySessionId, setChoosing, setOlderSessions, seasonList, whoPlayed, isPlanned }: HistoryTabProps) {
+  const { userId, locked, offline, busy, mutate, setError, setTab, setSessions, setWorkspace, frozen } = useCourt();
 
   return (
     <section hidden={hidden} aria-label="History"><div className="cs-session-heading"><div><p className="cs-eyebrow">THE GAMES STAY HERE</p><h2>Previously on court.</h2></div><span className="cs-caption">Dates in Dubai time</span></div><div className="cs-history-filter"><div className="cs-segment cs-segment-wrap" role="group" aria-label="Show sessions from">{ranges.map((item) => <button type="button" key={item.id} aria-pressed={range === item.id} onClick={() => setRange(item.id)}>{item.label}</button>)}</div>{range === "custom" ? <div className="cs-inline-form cs-date-range"><label><span className="cs-label">From</span><input className="cs-input" type="date" value={customFrom} max={customTo || dubaiToday()} onChange={(event) => setCustomFrom(event.target.value)} /></label><label><span className="cs-label">To</span><input className="cs-input" type="date" value={customTo} min={customFrom || undefined} max={dubaiToday()} onChange={(event) => setCustomTo(event.target.value)} /></label></div> : null}<p className="cs-help" role="status">{range === "all" ? `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"}${rangeIncomplete ? " loaded" : ""}` : `${filteredHistory.length} ${filteredHistory.length === 1 ? "session" : "sessions"} ${range === "today" ? "today" : range === "custom" ? (rangeFrom || rangeTo ? `between ${rangeFrom || "the start"} and ${rangeTo || "today"}` : "in the chosen dates") : `in the last ${range} days`}${rangeIncomplete ? ", checking older sessions..." : ""}`}</p></div><div className="cs-history-grid"><div><div className="cs-history-list">{filteredHistory.length ? filteredHistory.map((session) => <button key={session.id} type="button" className={`cs-history-session ${historySessionId === session.id ? "is-selected" : ""}`} onClick={() => { setHistorySessionId(session.id); setGameLimit(50); }} aria-pressed={historySessionId === session.id}><span className="cs-history-date">{dubaiDate(session.session_date, { day: "2-digit", month: "short" })}<small>{dubaiDate(session.session_date, { year: "numeric", month: undefined, day: undefined })}</small></span><span><strong>{session.ended_at ? "Session finished" : isPlanned(session) ? "Planned" : "On court"}</strong><small>{whoPlayed(session.id).join(", ") || "No attendees"}{session.venue_name ? ` · ${session.venue_name}` : ""} · Games to {session.target_score}</small></span><ChevronRightIcon width={18} height={18} aria-hidden="true" /></button>) : <div className="cs-empty cs-empty-small"><CounterClockwiseClockIcon width={28} height={28} aria-hidden="true" /><h3>{history.length ? "No sessions in this range." : "Your first session is still ahead."}</h3><p>{history.length ? "Try a wider date range." : "Start playing and this becomes the crew’s game archive."}</p></div>}</div>{rangeIncomplete ? <button className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={loadMore}>{busy === "older" ? "Loading..." : "Load older sessions"}<ArrowDownIcon width={16} height={16} aria-hidden="true" /></button> : null}</div><div className="cs-history-detail">{historySessionId ? selectedData ? <><div className="cs-section-heading"><h3>{dubaiDate(selectedData.session.session_date, { year: "numeric" })}</h3><span className="cs-caption">{selectedData.games.length} games</span></div>{frozen(selectedData.session.session_date) ? <p className="cs-help">The original score sheet. This season is over, so its results are final.</p> : <><p className="cs-help">The original score sheet. Corrections update everyone&apos;s stats.</p><details className="cs-session-edit"><summary>Edit session details</summary><form key={selectedData.session.id} aria-label="Edit session details" onSubmit={(event) => {
@@ -71,7 +70,7 @@ export function HistoryTab({ hidden, history, filteredHistory, range, setRange, 
           setWorkspace((current) => current ? { ...current, sessions: current.sessions.map((session) => session.id === id ? { ...session, ended_at: null } : session) } : current);
           setOlderSessions((current) => current.map((session) => session.id === id ? { ...session, ended_at: null } : session));
           setPlaySessionId(id);
-          rememberSession(id);
+          rememberSession(userId, id);
           setChoosing(false);
           setGameLimit(50);
           setTab("play");

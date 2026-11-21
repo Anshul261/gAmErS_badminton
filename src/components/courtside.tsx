@@ -2,40 +2,25 @@
 
 import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRightIcon, SewingPinIcon, CheckIcon, CounterClockwiseClockIcon, ExitIcon, PlusIcon, PlayIcon, ReloadIcon, BarChartIcon, PersonIcon, PauseIcon, Cross2Icon, CheckCircledIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import { ArrowRightIcon, CounterClockwiseClockIcon, ExitIcon, PlayIcon, ReloadIcon, BarChartIcon, PersonIcon, PauseIcon, Cross2Icon, QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameForm } from "@/components/game-form";
 import { PlayerDashboard } from "@/components/player-dashboard";
-import { CourtProvider } from "@/components/court/context";
+import { CourtProvider, message, rememberSession, rememberedSession } from "@/components/court/context";
 import type { Tab } from "@/components/court/context";
 import { FaqTab } from "@/components/court/faq-tab";
-import { GameList } from "@/components/court/game-list";
 import { HistoryTab } from "@/components/court/history-tab";
 import type { Range } from "@/components/court/history-tab";
 import { PeopleTab } from "@/components/court/people-tab";
+import { PlayTab } from "@/components/court/play-tab";
 import { StatsTab } from "@/components/court/stats-tab";
-import { addAttendee, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, saveGame, startSession } from "@/lib/data";
+import { ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, saveGame } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
-import { dubaiDate, dubaiToday, mapLabel, shortTime } from "@/lib/scoring";
+import { dubaiToday } from "@/lib/scoring";
 import { inSeason, seasons } from "@/lib/seasons";
 import type { Game, GameInput, Session, SessionData, StatGame, Workspace } from "@/lib/types";
 
 const tabs = [{ id: "play", label: "Play", icon: PlayIcon }, { id: "history", label: "History", icon: CounterClockwiseClockIcon }, { id: "stats", label: "Stats", icon: BarChartIcon }, { id: "people", label: "People", icon: PersonIcon }, { id: "faq", label: "FAQ", icon: QuestionMarkCircledIcon }] as const;
-
-function message(cause: unknown) {
-  return cause instanceof Error ? cause.message : "Something went wrong. Please try again.";
-}
-
-// Each account remembers the court it is logging for, so a reload lands back on it.
-function rememberedSession(userId: string) {
-  try { return window.localStorage.getItem(`courtside:session:${userId}`); } catch { return null; }
-}
-function rememberSession(userId: string, id: string | null) {
-  try {
-    if (id) window.localStorage.setItem(`courtside:session:${userId}`, id);
-    else window.localStorage.removeItem(`courtside:session:${userId}`);
-  } catch { /* Private mode or a full store: the session still works, it just will not stick. */ }
-}
 
 export function Courtside({ userId, defaultName }: { userId: string; defaultName: string }) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -58,12 +43,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const [busy, setBusy] = useState("");
   const [gamePending, setGamePending] = useState(false);
   const [attendees, setAttendees] = useState<string[]>([]);
-  const [target, setTarget] = useState(11);
-  const [planDate, setPlanDate] = useState(() => dubaiToday());
-  const [planTime, setPlanTime] = useState("");
-  const [planVenue, setPlanVenue] = useState("");
-  const [planUrl, setPlanUrl] = useState("");
-  const [latePlayerId, setLatePlayerId] = useState("");
   const [editingGame, setEditingGame] = useState<Game | null>(null);
   const [gameLimit, setGameLimit] = useState(50);
   const [choosing, setChoosing] = useState(false);
@@ -78,14 +57,8 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const playData = playSessionId ? sessions[playSessionId] : undefined;
   const selectedId = tab === "history" ? historySessionId : playSessionId;
   const selectedData = selectedId ? sessions[selectedId] : undefined;
-  const roster = workspace?.players.filter((player) => !player.archived) ?? [];
   const names = new Map(workspace?.players.map((player) => [player.id, player.display_name]) ?? []);
   const attendance = { ...olderAttendance, ...workspace?.attendance };
-  const whenWhere = (session: Session) => [
-    dubaiDate(session.session_date, { weekday: "short", year: session.session_date.slice(0, 4) === dubaiToday().slice(0, 4) ? undefined : "numeric" }),
-    shortTime(session.start_time),
-    session.venue_name,
-  ].filter(Boolean).join(" · ");
   const isPlanned = (session: Session) => !session.ended_at && session.session_date > dubaiToday();
   const whoPlayed = (id: string) => (attendance[id] ?? []).map((playerId) => names.get(playerId) ?? "Archived player").sort((a, b) => a.localeCompare(b));
   const locked = Boolean(busy) || gamePending;
@@ -330,57 +303,13 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
 
         {workspaceError ? <section className="cs-empty cs-access-error" role="alert"><h2>We couldn&apos;t open the court.</h2><p>{workspaceError}</p><p>Your sign-in may have expired. Scores are hidden until access is checked.</p><div className="cs-actions"><button className="cs-button cs-button-green" disabled={offline} onClick={() => refresh.current()}><ReloadIcon width={17} height={17} aria-hidden="true" />Try again</button><Link className="cs-button cs-button-outline" href="/login">Sign in again</Link></div></section> : !workspace ? <div className="cs-play-grid" role="status"><div><div className="cs-loading-court" aria-hidden="true"><div /><div /><div /><div /></div><p className="cs-help mt-4!">Getting the court ready...</p></div><div className="cs-score-sheet cs-loading-sheet" aria-hidden="true">{[0, 1, 2].map((row) => <div key={row}><span /><span /></div>)}</div></div> : <CourtProvider value={{
           userId, workspace, names, locked, offline, busy, mutate, setError, setTab, setProfileId, setEditingGame, setSessions, setWorkspace,
-          refresh: () => refresh.current(), frozen,
+          refresh: () => refresh.current(), frozen, error,
         }}>
           {selectedError ? <div className="cs-banner cs-banner-warning" role="alert"><span>Scores may not be up to date. {selectedError}</span><button className="cs-text-button" disabled={offline} onClick={() => refresh.current()}>Retry</button></div> : null}
 
-          <section hidden={tab !== "play"} aria-label="Play">
-            <div className="cs-session-heading"><div><p className="cs-eyebrow">{playData && !playEnded ? isPlanned(playData.session) ? "PLANNED" : "ON COURT" : "MAKE TIME FOR A GAME"}</p><h2>{playData ? playEnded ? "That's a session." : playData.playerIds.length < 2 ? "Who's here?" : "Let the games begin." : activeSessions.length ? "Pick a court." : "Who's playing today?"}</h2></div>{playData ? <span className="cs-date-stamp">{dubaiDate(playData.session.session_date, { weekday: "short" })}{playData.session.start_time ? ` · ${shortTime(playData.session.start_time)}` : ""}<span>Dubai time</span></span> : null}</div>
-            {playData && (playData.session.venue_name || playData.session.venue_url) ? <p className="cs-venue"><SewingPinIcon width={15} height={15} aria-hidden="true" /><span>{playData.session.venue_name ?? "Venue"}</span>{playData.session.venue_url ? <a href={playData.session.venue_url} target="_blank" rel="noopener noreferrer">Open in {mapLabel(playData.session.venue_url)}<ArrowRightIcon width={14} height={14} aria-hidden="true" /></a> : null}</p> : null}
-            {playData && activeSessions.length > 1 && !playEnded ? <div className="cs-banner"><span>{activeSessions.length} sessions are on court. Make sure you are logging on the right one.</span><button className="cs-text-button" disabled={locked} onClick={chooseSession}>Switch<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></div> : null}
+          <PlayTab hidden={tab !== "play"} playSessionId={playSessionId} setPlaySessionId={setPlaySessionId} playData={playData} playEnded={playEnded} activeSessions={activeSessions} sessionErrors={sessionErrors} attendees={attendees} setAttendees={setAttendees} gameLimit={gameLimit} setGameLimit={setGameLimit} setChoosing={setChoosing} openSession={openSession} chooseSession={chooseSession} save={save} setGamePending={setGamePending} whoPlayed={whoPlayed} isPlanned={isPlanned} />
 
-            {playSessionId && !playData ? <div className="cs-loading-sheet" role="status">{!sessionErrors[playSessionId] ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true"><span /><span /></div>) : null}<p>{sessionErrors[playSessionId] ? "This session could not be loaded." : "Loading the score sheet..."}</p></div> : playData ? <>
-              <div className="cs-session-strip"><span><PersonIcon width={16} height={16} aria-hidden="true" />{playData.playerIds.length} playing</span><span>{playData.games.length} {playData.games.length === 1 ? "game" : "games"} logged</span><span className="cs-sync-state">{offline || sessionErrors[playData.session.id] || error.startsWith("Updates paused.") ? "Sync paused" : playEnded ? "Finished" : "Updates every 4s"}</span></div>
-              <div className="cs-play-grid">
-                <div className="cs-log-panel">
-                  <div className="cs-section-heading"><h3>{playData.playerIds.length < 2 && !playEnded ? "Who's in?" : "Log a game"}</h3><span className="cs-caption">{playData.playerIds.length < 2 && !playEnded ? `${playData.playerIds.length} of 2 needed` : "1v1 / 1v2 / 2v2"}</span></div>
-                  {playEnded ? <p className="cs-banner cs-banner-warning">This session has finished. Your draft is kept here, but new games cannot be saved. Existing games can still be corrected.</p> : null}
-                  {playData.playerIds.length < 2 && !playEnded ? <div className="cs-whos-here"><p className="cs-help">{playData.playerIds.length ? `Only ${names.get(playData.playerIds[0]) ?? "one player"} so far. ` : "Nobody is in yet. "}Tap everyone who&apos;s here; you need two to log a game.</p><div className="cs-chips cs-attendee-chips">{roster.map((player) => { const here = playData.playerIds.includes(player.id); return <button className={`cs-chip ${here ? "is-selected" : ""}`} type="button" key={player.id} aria-pressed={here} disabled={locked || offline || here} onClick={() => void mutate("attendee", async () => {
-                    await addAttendee(playData.session, player.id);
-                    setSessions((current) => current[playData.session.id] ? { ...current, [playData.session.id]: { ...current[playData.session.id], playerIds: [...current[playData.session.id].playerIds, player.id] } } : current);
-                  }, `${player.display_name} is in.`)}>{here ? <CheckIcon width={16} height={16} aria-hidden="true" /> : <PlusIcon width={16} height={16} aria-hidden="true" />}<span>{player.display_name}</span></button>; })}</div>{!roster.length ? <button type="button" className="cs-button cs-button-outline" onClick={() => setTab("people")}><PlusIcon width={17} height={17} aria-hidden="true" />Add players</button> : null}</div> : <GameForm key={playData.session.id} session={playData.session} players={workspace.players.filter((player) => playData.playerIds.includes(player.id))} offline={offline} disabled={Boolean(busy) || playEnded} onSave={save} onPendingChange={setGamePending} />}
-                  {!playEnded && playData.playerIds.length >= 2 ? <details className="cs-late-attendee"><summary>Someone joined late?</summary><form className="cs-inline-form" onSubmit={(event) => {
-                    event.preventDefault();
-                    if (!latePlayerId) return;
-                    void mutate("attendee", async () => { await addAttendee(playData.session, latePlayerId); setLatePlayerId(""); }, "Player added to this session.");
-                  }}><label className="cs-sr-only" htmlFor="late-player">Add a late attendee</label><select className="cs-input" id="late-player" value={latePlayerId} onChange={(event) => setLatePlayerId(event.target.value)} disabled={locked} required><option value="">Choose a player</option>{roster.filter((player) => !playData.playerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.display_name}</option>)}</select><button className="cs-button cs-button-outline" type="submit" disabled={locked || offline || !latePlayerId}>Add</button></form><p className="cs-help">New face? Add their name in People first.</p></details> : null}
-                </div>
-                <aside className="cs-score-sheet"><div className="cs-section-heading"><h3>The score sheet</h3><span className="cs-count">{playData.games.length}</span></div><GameList data={playData} limit={gameLimit} onMore={() => setGameLimit(gameLimit + 50)} /><div className="cs-session-footer">{!playEnded ? <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={() => {
-                  if (!window.confirm("Finish this session? Save any game draft first. Scores can still be corrected in History.")) return;
-                  void mutate("finish", async () => {
-                    await endSession(playData.session.id);
-                    const endedAt = new Date().toISOString();
-                    setSessions((current) => ({ ...current, [playData.session.id]: { ...current[playData.session.id], session: { ...playData.session, ended_at: endedAt } } }));
-                    setWorkspace((current) => current ? { ...current, sessions: current.sessions.map((session) => session.id === playData.session.id ? { ...session, ended_at: endedAt } : session) } : current);
-                  }, "Session finished. See you next game.");
-                }}><CheckCircledIcon width={17} height={17} aria-hidden="true" />{busy === "finish" ? "Finishing..." : "Finish session"}</button> : null}<button type="button" className={`cs-button cs-full ${playEnded ? "cs-button-green" : "cs-button-outline"}`} disabled={locked} onClick={chooseSession}><PlusIcon width={17} height={17} aria-hidden="true" />{playEnded ? "Set up next session" : "Another session"}</button><p className="cs-help">Made a mistake? You can edit or delete a game.</p></div></aside>
-              </div>
-            </> : <div className="cs-setup-grid">{activeSessions.length ? <div className="cs-court-list"><div className="cs-section-heading"><h3 id="on-court">On court or planned</h3><span className="cs-count">{activeSessions.length}</span></div><ul aria-labelledby="on-court">{activeSessions.map((session) => {
-              const who = whoPlayed(session.id);
-              return <li key={session.id}><div><strong>{who.length ? who.join(", ") : "Nobody in yet"}</strong><small>{isPlanned(session) || session.start_time || session.venue_name ? `${isPlanned(session) ? "Planned " : ""}${whenWhere(session)}` : `Started ${dubaiDate(session.created_at, { day: undefined, month: undefined, hour: "2-digit", minute: "2-digit" })}`} · Games to {session.target_score}</small></div><button type="button" className="cs-button cs-button-green" disabled={locked} onClick={() => openSession(session.id)}>Open<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></li>;
-            })}</ul><p className="cs-help">Everyone logging the same court should open the same session. Only start a new one below if you are on another court.</p></div> : null}<form className="cs-session-setup" aria-label="Start a session" onSubmit={(event) => {
-              event.preventDefault();
-              const ids = attendees.filter((id) => roster.some((player) => player.id === id));
-              if (planUrl.trim() && !/^https:\/\//i.test(planUrl.trim())) { setError("Paste a full https:// link from Google Maps or Waze."); return; }
-              void mutate("start", async () => {
-                const id = await startSession({ attendees: ids, target, date: planDate || dubaiToday(), time: planTime, venue: planVenue, mapUrl: planUrl });
-                setPlaySessionId(id); rememberSession(userId, id); setChoosing(false); setGameLimit(50);
-                setAttendees([]); setPlanTime(""); setPlanVenue(""); setPlanUrl(""); setPlanDate(dubaiToday());
-              }, ids.length >= 2 ? "Session started. Your court is ready." : "Session created. People can add themselves when they arrive.");
-            }}><fieldset className="cs-fieldset" disabled={locked}><legend className="cs-label">Who&apos;s in?</legend><p className="cs-help">Tap everyone playing. Planning ahead? Leave this empty and people add themselves when they arrive.</p>{roster.length ? <div className="cs-chips cs-attendee-chips">{roster.map((player) => <button className={`cs-chip ${attendees.includes(player.id) ? "is-selected" : ""}`} type="button" key={player.id} aria-pressed={attendees.includes(player.id)} onClick={() => setAttendees((current) => current.includes(player.id) ? current.filter((id) => id !== player.id) : [...current, player.id])}>{attendees.includes(player.id) ? <CheckIcon width={16} height={16} aria-hidden="true" /> : <PlusIcon width={16} height={16} aria-hidden="true" />}<span>{player.display_name}</span></button>)}</div> : <div className="cs-empty cs-empty-small"><p>The roster is empty. Add your friends by name. They don&apos;t need an account to play.</p><button type="button" className="cs-button cs-button-outline" onClick={() => setTab("people")}><PlusIcon width={17} height={17} aria-hidden="true" />Add players</button></div>}</fieldset><fieldset className="cs-fieldset cs-setup-when" disabled={locked}><legend className="cs-label">When &amp; where</legend><div className="cs-when-grid"><label><span className="cs-label">Date</span><input className="cs-input" type="date" value={planDate} min={dubaiToday(365)} onChange={(event) => setPlanDate(event.target.value)} required /></label><label><span className="cs-label">Time <em>(optional)</em></span><input className="cs-input" type="time" value={planTime} onChange={(event) => setPlanTime(event.target.value)} /></label><label><span className="cs-label">Place <em>(optional)</em></span><input className="cs-input" maxLength={80} placeholder="e.g. Al Nasr Leisureland" value={planVenue} onChange={(event) => setPlanVenue(event.target.value)} /></label><label><span className="cs-label">Map link <em>(optional)</em></span><input className="cs-input" type="url" inputMode="url" maxLength={500} placeholder="Paste a Google Maps or Waze link" value={planUrl} onChange={(event) => setPlanUrl(event.target.value)} /></label></div><p className="cs-help">Dates are Dubai time. Share a Google Maps or Waze link so everyone finds the court.</p></fieldset><fieldset className="cs-fieldset cs-setup-target" disabled={locked}><legend className="cs-label">Usual game target</legend><div className="cs-segment">{[11, 21].map((value) => <button type="button" key={value} aria-pressed={target === value} onClick={() => setTarget(value)}>{value} points</button>)}</div><p className="cs-help">Win by two. You can change the target for each game.</p></fieldset><button type="submit" className="cs-button cs-button-green cs-full" disabled={locked || offline || !planDate}>{busy === "start" ? "Creating session..." : attendees.length >= 2 ? `Start session with ${attendees.length}` : planDate > dubaiToday() ? "Plan session" : "Create session"}<ArrowRightIcon width={18} height={18} aria-hidden="true" /></button></form><aside className="cs-court-note"><div className="cs-decorative-court" aria-hidden="true"><span /><span /></div><p className="cs-eyebrow">THE HOUSE RULES</p><h3>Good games.<br />Honest scores.</h3><p>Singles, doubles or three friends making it work. Everyone on a side shares the result.</p><p>One person can log for the whole crew. Phones down, rackets up.</p></aside></div>}
-          </section>
-
-          <HistoryTab hidden={tab !== "history"} history={history} filteredHistory={filteredHistory} range={range} setRange={setRange} customFrom={customFrom} setCustomFrom={setCustomFrom} customTo={customTo} setCustomTo={setCustomTo} rangeFrom={rangeFrom} rangeTo={rangeTo} rangeIncomplete={rangeIncomplete} historySessionId={historySessionId} setHistorySessionId={setHistorySessionId} selectedData={selectedData} selectedError={selectedError} gameLimit={gameLimit} setGameLimit={setGameLimit} loadMore={loadMore} openSession={openSession} playData={playData} playEnded={playEnded} playSessionId={playSessionId} setPlaySessionId={setPlaySessionId} setChoosing={setChoosing} setOlderSessions={setOlderSessions} rememberSession={(id) => rememberSession(userId, id)} seasonList={seasonList} whoPlayed={whoPlayed} isPlanned={isPlanned} />
+          <HistoryTab hidden={tab !== "history"} history={history} filteredHistory={filteredHistory} range={range} setRange={setRange} customFrom={customFrom} setCustomFrom={setCustomFrom} customTo={customTo} setCustomTo={setCustomTo} rangeFrom={rangeFrom} rangeTo={rangeTo} rangeIncomplete={rangeIncomplete} historySessionId={historySessionId} setHistorySessionId={setHistorySessionId} selectedData={selectedData} selectedError={selectedError} gameLimit={gameLimit} setGameLimit={setGameLimit} loadMore={loadMore} openSession={openSession} playData={playData} playEnded={playEnded} playSessionId={playSessionId} setPlaySessionId={setPlaySessionId} setChoosing={setChoosing} setOlderSessions={setOlderSessions} seasonList={seasonList} whoPlayed={whoPlayed} isPlanned={isPlanned} />
 
           <StatsTab hidden={tab !== "stats"} season={season} seasonList={seasonList} seasonPick={seasonPick} setSeasonPick={setSeasonPick} seasonGames={seasonGames} gamesError={gamesError} />
 
