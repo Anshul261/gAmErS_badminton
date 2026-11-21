@@ -197,6 +197,12 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   }, []);
 
   useEffect(() => { refresh.current(); }, [selectedId, tab, profileId]);
+  // Notices fade after 4 s. Errors stay until dismissed.
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 4000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   async function mutate(label: string, task: () => Promise<void>, success: string) {
     if (actionLock.current || offline) return;
@@ -231,7 +237,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
         games.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
         return { ...current, [game.session_id]: { ...data, games } };
       });
-      setNotice(original ? "Game corrected." : "Game saved.");
+      if (original) setNotice("Game corrected.");
       if (original) setEditingGame(null);
       // Refresh owns its errors. A recorded game must never look like a failed save.
       refresh.current();
@@ -291,8 +297,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
 
       <main id="main" className="cs-main">
         {offline ? <div className="cs-banner cs-banner-warning" role="status"><PauseIcon width={18} height={18} aria-hidden="true" /><span>Syncing paused. You are offline. Keep this page open to retain your draft.</span></div> : null}
-        {error ? <div className="cs-banner cs-banner-error" role="alert"><span>{error}</span><button className="cs-icon-button" aria-label="Dismiss error" onClick={() => setError("")}><Cross2Icon width={17} height={17} aria-hidden="true" /></button></div> : null}
-        <p className="cs-global-status" role="status" aria-live="polite">{notice}</p>
         {/expired|sign.?in|jwt|auth/i.test(`${error} ${selectedError} ${gamesError}`) ? <Link className="cs-text-button" href="/login">Sign in again<ArrowRightIcon width={16} height={16} aria-hidden="true" /></Link> : null}
 
         <div className="cs-page-heading">
@@ -322,6 +326,10 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
       <Dialog open={Boolean(profileId)} onOpenChange={(open) => { if (!open) setProfileId(null); }}><DialogContent className="cs-dialog cs-player-dialog"><DialogHeader><p className="cs-eyebrow">PLAYER CARD · {season ? `SEASON ${season.number}` : "ALL TIME"}</p><DialogTitle>{profileId ? names.get(profileId) ?? "Archived player" : ""}</DialogTitle><DialogDescription>Every logged game, all sessions.</DialogDescription></DialogHeader>{profileId ? <PlayerDashboard key={profileId} playerId={profileId} games={seasonGames} names={names} error={gamesError} onPick={setProfileId} onOpenSession={(id) => { setProfileId(null); setRange("all"); setHistorySessionId(id); setGameLimit(50); setTab("history"); }} /> : null}</DialogContent></Dialog>
 
       <Dialog open={Boolean(editingGame)} onOpenChange={(open) => { if (!open && !gamePending) setEditingGame(null); }}><DialogContent className="cs-dialog cs-edit-dialog" showCloseButton={!gamePending} onInteractOutside={(event) => { if (gamePending) event.preventDefault(); }} onEscapeKeyDown={(event) => { if (gamePending) event.preventDefault(); }}><DialogHeader><DialogTitle>Correct a game</DialogTitle><DialogDescription>Update the teams or final score. Everyone&apos;s stats will be recalculated.</DialogDescription></DialogHeader>{editingGame && sessions[editingGame.session_id] && workspace ? <GameForm key={editingGame.id} game={editingGame} session={sessions[editingGame.session_id].session} players={workspace.players.filter((player) => sessions[editingGame.session_id].playerIds.includes(player.id) || [editingGame.side_a_player_1, editingGame.side_a_player_2, editingGame.side_b_player_1, editingGame.side_b_player_2].includes(player.id))} offline={offline} disabled={Boolean(busy)} onSave={save} onPendingChange={setGamePending} /> : null}</DialogContent></Dialog>
+      <div className="cs-toasts">
+        {error ? <div className="cs-toast cs-toast-error" role="alert"><span>{error}</span><button className="cs-icon-button" aria-label="Dismiss error" onClick={() => setError("")}><Cross2Icon width={17} height={17} aria-hidden="true" /></button></div> : null}
+        <p className="cs-toast" role="status" aria-live="polite" hidden={!notice}>{notice}</p>
+      </div>
     </div>
   );
 }

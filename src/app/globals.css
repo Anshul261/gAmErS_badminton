@@ -177,8 +177,11 @@
 .cs-danger { @apply text-destructive; }
 .cs-form-status { @apply text-xs leading-normal text-primary; }
 .cs-form-status:empty { @apply hidden; }
-.cs-global-status { @apply pt-3 text-xs text-primary; }
-.cs-global-status:empty { @apply hidden; }
+.cs-toasts { @apply pointer-events-none fixed inset-x-0 z-60 mx-auto grid max-w-md gap-2 px-4; bottom: calc(16px + env(safe-area-inset-bottom)); }
+.cs-toast { @apply pointer-events-auto flex items-center justify-between gap-2 rounded border bg-card px-4 py-3 text-sm text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] wrap-anywhere animate-in fade-in-0 slide-in-from-bottom-2; }
+.cs-toast > span { @apply min-w-0; }
+.cs-toast > button { @apply shrink-0; }
+.cs-toast-error { @apply border-destructive/40 text-destructive; }
 .cs-error { @apply rounded-xs border-l-2 border-destructive bg-destructive/10 px-3 py-2.5 text-xs leading-normal text-destructive wrap-anywhere; }
 .cs-banner { @apply mt-3 mb-4 flex items-center justify-between gap-2 rounded border bg-muted px-3 py-2.5 text-xs text-foreground wrap-anywhere md:gap-3 md:px-4; }
 .cs-banner > span { @apply min-w-0; }
@@ -311,6 +314,7 @@
 }
 
 @media (width < 48rem) {
+  .cs-toasts { bottom: calc(82px + 12px + env(safe-area-inset-bottom)); }
   .cs-app { padding-bottom: calc(82px + env(safe-area-inset-bottom)); }
   .cs-tabs { @apply fixed inset-x-0 bottom-0 z-30 m-0 grid grid-cols-5 gap-0 border-t border-b-0 bg-background px-3 pt-1.5; padding-bottom: calc(6px + env(safe-area-inset-bottom)); }
   .cs-tabs button { @apply min-h-14 flex-col gap-1 rounded border-0 px-1 py-1.5 text-[11px]; }
