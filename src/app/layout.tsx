@@ -8,19 +8,19 @@ export const metadata: Metadata = {
   description: "The gAmErS badminton scorebook.",
   robots: { index: false, follow: false },
   icons: { icon: "/icon.svg" },
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "gAmErS cOuRtSiDe" },
+  appleWebApp: { capable: true, statusBarStyle: "black", title: "gAmErS cOuRtSiDe" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#173f35",
+  themeColor: "#000000",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`dark ${GeistSans.variable} ${GeistMono.variable}`}>
       <body>{children}</body>
     </html>
   );
