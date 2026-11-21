@@ -207,19 +207,25 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   }, [notice]);
 
   async function mutate(label: string, task: () => Promise<void>, success: string) {
-    if (actionLock.current || offline) return;
+    if (actionLock.current || offline) {
+      // A confirm dialog no longer freezes the page, so a confirmed action can arrive while another holds the lock.
+      // Say so instead of dropping it. Background paging ("older") stays silent.
+      if (label !== "older") setError(offline ? "You're offline. Reconnect and try again." : "Another change is still saving. Try again in a moment.");
+      return;
+    }
     actionLock.current = true;
     setBusy(label);
     setError("");
     setNotice("");
     try {
       await task();
-      revision.current += 1;
       setNotice(success);
-      refresh.current();
     } catch (cause) {
       setError(message(cause));
     } finally {
+      // Count failed actions too: they may have written part of their change, so reads started before them are stale.
+      revision.current += 1;
+      refresh.current();
       actionLock.current = false;
       setBusy("");
     }
