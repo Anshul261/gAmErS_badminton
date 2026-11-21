@@ -22,6 +22,8 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-rank-2: var(--rank-2);
+  --color-rank-3: var(--rank-3);
+  --color-gold: var(--gold);
   --color-win: var(--win);
   --color-win-foreground: var(--win-foreground);
   --color-court: var(--court);
@@ -70,6 +72,8 @@
   --court-accent: #4ade80;
   --court-line: rgb(255 255 255 / 0.14);
   --rank-2: #a1a1a1;
+  --rank-3: #cd7f5a;
+  --gold: #f5c451;
   --radius: 0.5rem;
 }
 
@@ -263,18 +267,18 @@
 .cs-stats-table tbody td { @apply border-b px-0.5 py-4 text-right font-mono text-[12px] whitespace-nowrap md:px-3 md:py-5 md:text-base; }
 .cs-stats-table tbody th { @apply border-b px-2 py-4 text-left text-xs font-medium wrap-anywhere md:px-3 md:py-5 md:text-sm; }
 .cs-stats-table tbody th small { @apply mt-1 block text-[10px] font-normal text-muted-foreground; }
-.cs-stats-table tbody tr:first-child:not(.cs-stats-group) { @apply bg-accent/60; }
+.cs-stats-table tbody tr:first-child:not(.cs-stats-group) { @apply bg-gold/5; }
 .cs-stats-table tbody tr.cs-stats-group th { @apply border-b-2 border-input pt-8 pb-2 text-[10px] tracking-widest text-muted-foreground uppercase md:text-[11px]; }
 .cs-stats-table tbody tr.cs-stats-group th small { @apply tracking-normal normal-case; }
 .cs-stats-table .cs-rank { @apply float-left mt-px mr-2 inline-flex h-6 w-10 items-center justify-center rounded-full border border-input font-mono text-[11px] font-semibold text-muted-foreground tabular-nums md:mr-4 md:h-7 md:w-12 md:text-xs; }
 .cs-stats-table .cs-rank sup { @apply top-0 ml-px text-[8px] font-medium md:text-[9px]; }
 .cs-stats-table .cs-rank.is-top { @apply border-transparent; }
-.cs-stats-table .cs-rank.is-1 { @apply bg-primary text-primary-foreground; }
+.cs-stats-table .cs-rank.is-1 { @apply bg-gold text-primary-foreground; }
 .cs-stats-table .cs-rank.is-2 { @apply bg-rank-2 text-primary-foreground; }
-.cs-stats-table .cs-rank.is-3 { @apply border-foreground bg-transparent text-foreground; }
+.cs-stats-table .cs-rank.is-3 { @apply bg-rank-3 text-primary-foreground; }
 .cs-stats-table .cs-rank.is-none { @apply border-dashed; }
 .cs-stats-table tbody th > span:not(.cs-rank) { @apply block overflow-hidden; }
-.cs-stats-table .cs-stat-wins { @apply font-semibold; }
+.cs-stats-table .cs-stat-wins { @apply font-semibold text-win; }
 .cs-positive { @apply text-win; }
 .cs-stats-footnote { @apply py-5 text-[11px] md:text-xs; }
 .cs-people-grid { @apply grid grid-cols-1 items-start gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)] lg:gap-16; }
@@ -441,8 +445,10 @@
 .cs-mo-plot svg { @apply absolute inset-0 size-full overflow-visible; }
 .cs-mo-zero { stroke: var(--input); stroke-width: 1; }
 .cs-mo-session { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
-.cs-mo-area { fill: color-mix(in oklab, var(--foreground) 8%, transparent); }
-.cs-mo-line { fill: none; stroke: var(--foreground); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cs-mo-area { fill: color-mix(in oklab, var(--win) 14%, transparent); }
+.is-down > .cs-mo-area { fill: color-mix(in oklab, var(--destructive) 14%, transparent); }
+.cs-mo-line { fill: none; stroke: var(--win); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.is-down > .cs-mo-line { stroke: var(--destructive); }
 .cs-mo-dot { @apply pointer-events-none absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card; }
 .cs-mo-dot.is-win { @apply bg-win; }
 .cs-mo-dot.is-loss { @apply bg-destructive; }
@@ -457,10 +463,20 @@
 .cs-awards { @apply mb-5; }
 .cs-awards ul { @apply -mx-4 m-0 flex list-none snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 lg:grid-cols-4; }
 .cs-awards li { @apply flex w-[46%] shrink-0 snap-start flex-col rounded-lg border bg-card px-3 py-3 md:w-auto; }
-.cs-awards li:first-child { @apply border-t-2 border-t-win; }
 .cs-award-name { @apply font-mono text-[10px] font-semibold tracking-[.14em] text-muted-foreground uppercase; }
 .cs-award-who { @apply mt-2 text-sm leading-snug font-semibold wrap-anywhere; }
 .cs-award-value { @apply mt-1 font-mono text-lg font-semibold tabular-nums; }
+/* Result colour: green = good, red = bad, gold = records. Value text, a 2px top bar and a faint tint. */
+.cs-pd-tiles > div.is-good, .cs-pd-trophies li.is-good, .cs-awards li.is-good { @apply border-t-2 border-t-win bg-win/5; }
+.cs-pd-tiles > div.is-bad, .cs-pd-trophies li.is-bad, .cs-awards li.is-bad { @apply border-t-2 border-t-destructive bg-destructive/5; }
+.cs-pd-trophies li.is-record, .cs-awards li.is-record, .cs-awards li:first-child { @apply border-t-2 border-t-gold bg-gold/5; }
+:is(.cs-pd-tiles > div, .cs-pd-trophies li, .cs-awards li).is-good :is(dd, strong, .cs-award-value) { @apply text-win; }
+:is(.cs-pd-tiles > div, .cs-pd-trophies li, .cs-awards li).is-bad :is(dd, strong, .cs-award-value) { @apply text-destructive; }
+:is(.cs-pd-trophies li, .cs-awards li).is-record :is(strong, .cs-award-value), .cs-awards li:first-child .cs-award-value { @apply text-gold; }
+.cs-pd-list.is-good .cs-pd-rank { @apply bg-win/15 text-win; }
+.cs-pd-list.is-good .cs-pd-name small { @apply text-win; }
+.cs-pd-list.is-bad .cs-pd-rank { @apply bg-destructive/15 text-destructive; }
+.cs-pd-list.is-bad .cs-pd-name small { @apply text-destructive; }
 .cs-awards small { @apply mt-1 text-[11px] leading-snug text-muted-foreground; }
 
 .cs-player-search { @apply relative mt-3 flex items-center; }

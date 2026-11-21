@@ -21,6 +21,9 @@ function ordinal(n: number) {
   return `${n}${suffix}`;
 }
 
+// Hall of fame cards with a clear meaning get a colour. The first card is always gold.
+const awardTone: Record<string, string> = { fire: "is-good", ice: "is-good", dozer: "is-good", opener: "is-good", heart: "is-bad", lungs: "is-record" };
+
 type StatsTabProps = {
   hidden: boolean;
   season: Season | null;
@@ -82,7 +85,7 @@ export function StatsTab({ hidden, season, seasonList, seasonPick, setSeasonPick
         : <>
           {awards.length ? <section className="cs-awards" aria-labelledby="hall-of-fame">
             <div className="cs-section-heading"><h3 id="hall-of-fame">Hall of fame</h3><span className="cs-caption">Swipe for more</span></div>
-            <ul>{awards.map((award) => <li key={award.id}><p className="cs-award-name">{award.name}</p><p className="cs-award-who">{award.players.map((id, index) => <span key={id}>{index ? <span className="cs-dim">{award.id === "feud" ? " vs " : " & "}</span> : null}<button type="button" className="cs-player-link" onClick={() => setProfileId(id)}>{names.get(id) ?? "Archived player"}</button></span>)}</p><p className="cs-award-value">{award.value}</p><small>{award.line}</small></li>)}</ul>
+            <ul>{awards.map((award) => <li key={award.id} className={awardTone[award.id] ?? ""}><p className="cs-award-name">{award.name}</p><p className="cs-award-who">{award.players.map((id, index) => <span key={id}>{index ? <span className="cs-dim">{award.id === "feud" ? " vs " : " & "}</span> : null}<button type="button" className="cs-player-link" onClick={() => setProfileId(id)}>{names.get(id) ?? "Archived player"}</button></span>)}</p><p className="cs-award-value">{award.value}</p><small>{award.line}</small></li>)}</ul>
           </section> : null}
           <div className="cs-stats-table-wrap">
             <table className="cs-stats-table">

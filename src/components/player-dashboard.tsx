@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { ChevronRightIcon, Cross2Icon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
 import { findMatches, playerDashboard, type MatchFilter, type Moment, type Rival, type WinLoss } from "@/lib/player-stats";
 import { dubaiDate, dubaiToday } from "@/lib/scoring";
@@ -19,6 +19,7 @@ function deuceVerdict(deuce: WinLoss) {
 
 function Momentum({ timeline, label }: { timeline: Moment[]; label: (moment: Moment) => string }) {
   const [picked, setPicked] = useState(timeline.length - 1);
+  const clip = useId();
   const area = useRef<HTMLDivElement>(null);
   const nets = timeline.map((moment) => moment.net);
   const top = Math.max(1, ...nets);
@@ -60,8 +61,14 @@ function Momentum({ timeline, label }: { timeline: Moment[]; label: (moment: Mom
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
         {boundaries.map((at) => <line key={at} x1={at} x2={at} y1="0" y2="100" className="cs-mo-session" vectorEffect="non-scaling-stroke" />)}
         <line x1="0" x2="100" y1={y(0)} y2={y(0)} className="cs-mo-zero" vectorEffect="non-scaling-stroke" />
-        <path d={`${line} L100 ${y(0)} Z`} className="cs-mo-area" />
-        <path d={line} className="cs-mo-line" vectorEffect="non-scaling-stroke" />
+        <defs>
+          <clipPath id={`${clip}-up`}><rect x="0" y="0" width="100" height={y(0)} /></clipPath>
+          <clipPath id={`${clip}-down`}><rect x="0" y={y(0)} width="100" height={100 - y(0)} /></clipPath>
+        </defs>
+        {(["up", "down"] as const).map((half) => <g key={half} clipPath={`url(#${clip}-${half})`} className={`is-${half}`}>
+          <path d={`${line} L100 ${y(0)} Z`} className="cs-mo-area" />
+          <path d={line} className="cs-mo-line" vectorEffect="non-scaling-stroke" />
+        </g>)}
       </svg>
       {timeline[peakIndex].net > 0 ? <span className="cs-mo-peak" style={{ left: `${x(peakIndex)}%`, top: `${y(timeline[peakIndex].net)}%` }}>Peak {signed(timeline[peakIndex].net)}</span> : null}
       <span className={`cs-mo-dot ${moment.won ? "is-win" : "is-loss"}`} style={{ left: `${x(picked)}%`, top: `${y(moment.net)}%` }} aria-hidden="true" />
@@ -126,19 +133,20 @@ export function PlayerDashboard({ playerId, games, names, error, onPick, onOpenS
   if (!stats.played) return <div className="cs-empty cs-empty-small"><h3>No games yet.</h3><p>Once {name(playerId)} plays a logged game, their card fills in here.</p></div>;
 
   const difference = stats.pointsFor - stats.pointsAgainst;
-  const trophies: { label: string; value: string; note: string }[] = [
-    { label: deuceVerdict(stats.deuce), value: `${stats.deuce.wins}–${stats.deuce.losses}`, note: `Deuce games · ${pct(stats.deuce)} won` },
-    { label: "Bulldozer runs", value: String(stats.demolitions), note: stats.bagels ? `Wins by a mile, incl. ${plural(stats.bagels, "bagel")}` : "Wins by a mile" },
-    { label: "So close", value: String(stats.heartbreaks), note: "Losses by just two points" },
-    { label: stats.openers.wins >= stats.openers.losses ? "No warm-up needed" : "Slow starter", value: `${stats.openers.wins}–${stats.openers.losses}`, note: "First game of each session" },
-    ...stats.biggestWin ? [{ label: "Biggest beatdown", value: `${stats.biggestWin.ours}–${stats.biggestWin.theirs}`, note: `${vs(stats.biggestWin)} · ${dubaiDate(stats.biggestWin.date)}` }] : [],
-    ...stats.marathon ? [{ label: "The marathon", value: `${stats.marathon.ours}–${stats.marathon.theirs}`, note: `Longest game · ${stats.marathon.won ? "won" : "lost"} ${dubaiDate(stats.marathon.date)}` }] : [],
-    ...stats.bestDay ? [{ label: "Best day", value: dayLabel(stats.bestDay.date), note: `${plural(stats.bestDay.wins, "win")}, ${plural(stats.bestDay.losses, "loss", "losses")}` }] : [],
-    ...stats.busiestDay ? [{ label: "Iron lungs", value: String(stats.busiestDay.wins + stats.busiestDay.losses), note: `Most games in a day · ${dubaiDate(stats.busiestDay.date)}` }] : [],
+  // tone colours the card: good = green, bad = red, record = gold. A count of zero stays neutral.
+  const trophies: { label: string; value: string; note: string; tone: "good" | "bad" | "record" | "neutral" }[] = [
+    { label: deuceVerdict(stats.deuce), value: `${stats.deuce.wins}–${stats.deuce.losses}`, note: `Deuce games · ${pct(stats.deuce)} won`, tone: stats.deuce.wins + stats.deuce.losses === 0 ? "neutral" : deuceVerdict(stats.deuce) === "Ice in the veins" ? "good" : deuceVerdict(stats.deuce) === "Sweaty palms" ? "bad" : "neutral" },
+    { label: "Bulldozer runs", value: String(stats.demolitions), note: stats.bagels ? `Wins by a mile, incl. ${plural(stats.bagels, "bagel")}` : "Wins by a mile", tone: stats.demolitions ? "good" : "neutral" },
+    { label: "So close", value: String(stats.heartbreaks), note: "Losses by just two points", tone: stats.heartbreaks ? "bad" : "neutral" },
+    { label: stats.openers.wins >= stats.openers.losses ? "No warm-up needed" : "Slow starter", value: `${stats.openers.wins}–${stats.openers.losses}`, note: "First game of each session", tone: stats.openers.wins + stats.openers.losses === 0 ? "neutral" : stats.openers.wins >= stats.openers.losses ? "good" : "bad" },
+    ...stats.biggestWin ? [{ label: "Biggest beatdown", value: `${stats.biggestWin.ours}–${stats.biggestWin.theirs}`, note: `${vs(stats.biggestWin)} · ${dubaiDate(stats.biggestWin.date)}`, tone: "good" as const }] : [],
+    ...stats.marathon ? [{ label: "The marathon", value: `${stats.marathon.ours}–${stats.marathon.theirs}`, note: `Longest game · ${stats.marathon.won ? "won" : "lost"} ${dubaiDate(stats.marathon.date)}`, tone: stats.marathon.won ? "good" as const : "bad" as const }] : [],
+    ...stats.bestDay ? [{ label: "Best day", value: dayLabel(stats.bestDay.date), note: `${plural(stats.bestDay.wins, "win")}, ${plural(stats.bestDay.losses, "loss", "losses")}`, tone: "record" as const }] : [],
+    ...stats.busiestDay ? [{ label: "Iron lungs", value: String(stats.busiestDay.wins + stats.busiestDay.losses), note: `Most games in a day · ${dubaiDate(stats.busiestDay.date)}`, tone: "record" as const }] : [],
   ];
 
-  const rivalList = (rivals: Rival[], label: (rival: Rival) => string, empty: string) => rivals.length
-    ? <ol className="cs-pd-list">{rivals.map((rival, index) => <li key={rival.id}><button type="button" onClick={() => onPick(rival.id)}><span className="cs-pd-rank">{index + 1}</span><span className="cs-pd-name">{name(rival.id)}<small>{label(rival)}</small></span><ChevronRightIcon width={16} height={16} aria-hidden="true" /></button></li>)}</ol>
+  const rivalList = (rivals: Rival[], tone: "good" | "bad", label: (rival: Rival) => string, empty: string) => rivals.length
+    ? <ol className={`cs-pd-list is-${tone}`}>{rivals.map((rival, index) => <li key={rival.id}><button type="button" onClick={() => onPick(rival.id)}><span className="cs-pd-rank">{index + 1}</span><span className="cs-pd-name">{name(rival.id)}<small>{label(rival)}</small></span><ChevronRightIcon width={16} height={16} aria-hidden="true" /></button></li>)}</ol>
     : <p className="cs-help">{empty}</p>;
 
   return <div className="cs-pd">
@@ -152,10 +160,10 @@ export function PlayerDashboard({ playerId, games, names, error, onPick, onOpenS
     </div>
 
     <dl className="cs-pd-tiles">
-      <div><dt>Wins</dt><dd className="cs-positive">{stats.wins}</dd></div>
-      <div><dt>Losses</dt><dd>{stats.losses}</dd></div>
+      <div className={stats.wins ? "is-good" : ""}><dt>Wins</dt><dd>{stats.wins}</dd></div>
+      <div className={stats.losses ? "is-bad" : ""}><dt>Losses</dt><dd>{stats.losses}</dd></div>
       <div><dt>Win %</dt><dd>{pct(stats)}</dd></div>
-      <div><dt>Pts +/-</dt><dd className={difference > 0 ? "cs-positive" : ""}>{signed(difference)}</dd></div>
+      <div className={difference > 0 ? "is-good" : difference < 0 ? "is-bad" : ""}><dt>Pts +/-</dt><dd>{signed(difference)}</dd></div>
     </dl>
 
     <section className="cs-pd-card" aria-labelledby="pd-momentum">
@@ -173,19 +181,19 @@ export function PlayerDashboard({ playerId, games, names, error, onPick, onOpenS
 
     <section aria-labelledby="pd-trophies">
       <div className="cs-section-heading"><h3 id="pd-trophies">Trophy cabinet</h3></div>
-      <ul className="cs-pd-trophies">{trophies.map((trophy) => <li key={trophy.label}><span>{trophy.label}</span><strong>{trophy.value}</strong><small>{trophy.note}</small></li>)}</ul>
+      <ul className="cs-pd-trophies">{trophies.map((trophy) => <li key={trophy.label} className={`is-${trophy.tone}`}><span>{trophy.label}</span><strong>{trophy.value}</strong><small>{trophy.note}</small></li>)}</ul>
     </section>
 
     <section className="cs-pd-card" aria-labelledby="pd-mates">
       <div className="cs-section-heading"><h3 id="pd-mates">Ride or die</h3><span className="cs-caption">Best teammates</span></div>
-      {rivalList(stats.teammates, (mate) => `${plural(mate.wins, "win")} together`, "Hasn't teamed up yet.")}
+      {rivalList(stats.teammates, "good", (mate) => `${plural(mate.wins, "win")} together`, "Hasn't teamed up yet.")}
     </section>
 
     <section className="cs-pd-card" aria-labelledby="pd-h2h">
       <div className="cs-section-heading"><h3 id="pd-h2h">Head to head</h3></div>
       <div className="cs-pd-h2h">
-        <div><p className="cs-eyebrow">FAVOURITE CUSTOMERS</p>{rivalList(stats.beatMost, (rival) => `Beaten ${plural(rival.wins, "time")} · ${rival.wins}–${rival.losses} overall`, "No victims yet.")}</div>
-        <div><p className="cs-eyebrow">NEMESIS</p>{rivalList(stats.lostMost, (rival) => `Lost to ${plural(rival.losses, "time")} · ${rival.wins}–${rival.losses} overall`, "Unbeaten so far. Suspicious.")}</div>
+        <div><p className="cs-eyebrow">FAVOURITE CUSTOMERS</p>{rivalList(stats.beatMost, "good", (rival) => `Beaten ${plural(rival.wins, "time")} · ${rival.wins}–${rival.losses} overall`, "No victims yet.")}</div>
+        <div><p className="cs-eyebrow">NEMESIS</p>{rivalList(stats.lostMost, "bad", (rival) => `Lost to ${plural(rival.losses, "time")} · ${rival.wins}–${rival.losses} overall`, "Unbeaten so far. Suspicious.")}</div>
       </div>
     </section>
   </div>;
