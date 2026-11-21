@@ -50,15 +50,15 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
   const title = mode === "forgot" ? "Forgot your password?" : mode === "reset" ? "A fresh password." : "Back for another game?";
   return (
     <main className="min-h-dvh bg-background lg:grid lg:grid-cols-[1.1fr_1fr]">
-      <section className="relative flex min-h-56 flex-col justify-between overflow-hidden bg-primary px-6 py-6 text-primary-foreground md:px-12 lg:min-h-dvh lg:p-16">
-        <div className="relative z-10 flex items-center gap-3 text-xl font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-full border border-white/40 text-sm">g.</span> gAmErS cOuRtSiDe</div>
+      <section className="relative flex min-h-56 flex-col justify-between overflow-hidden bg-court px-6 py-6 text-court-foreground md:px-12 lg:min-h-dvh lg:p-16">
+        <div className="relative z-10 flex items-center gap-3 text-xl font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-full border border-court-foreground/40 text-sm">g.</span> gAmErS cOuRtSiDe</div>
         <div className="relative z-10 my-7 max-w-md lg:my-24">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-accent">Your people. Your scorebook.</p>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-court-accent">Your people. Your scorebook.</p>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.045em] md:text-5xl lg:text-6xl">Play the game.<br />Keep the receipts.</h1>
-          <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/75 lg:text-base">Log the last game before the next one starts. Settle the arguments later.</p>
+          <p className="mt-4 max-w-xs text-sm leading-relaxed text-court-foreground/75 lg:text-base">Log the last game before the next one starts. Settle the arguments later.</p>
         </div>
-        <p className="relative z-10 hidden text-sm text-white/65 lg:block">Badminton nights, Dubai.</p>
-        <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-[-100px] h-[380px] w-[280px] rotate-[-24deg] border-2 border-white/10"><div className="absolute inset-x-0 top-1/2 border-t-2 border-white/10" /><div className="absolute inset-y-0 left-1/2 border-l-2 border-white/10" /><div className="absolute inset-5 border border-white/10" /></div>
+        <p className="relative z-10 hidden text-sm text-court-foreground/65 lg:block">Badminton nights, Dubai.</p>
+        <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-[-100px] h-[380px] w-[280px] rotate-[-24deg] border-2 border-court-foreground/10"><div className="absolute inset-x-0 top-1/2 border-t-2 border-court-foreground/10" /><div className="absolute inset-y-0 left-1/2 border-l-2 border-court-foreground/10" /><div className="absolute inset-5 border border-court-foreground/10" /></div>
       </section>
       <section className="flex items-center justify-center px-6 py-8 md:p-12">
         <div className="w-full max-w-sm">
