@@ -150,6 +150,7 @@
 .cs-chip { @apply inline-flex min-h-11 max-w-full items-center justify-center gap-1.5 rounded border bg-card px-2.5 py-2 text-left text-xs leading-snug md:px-3; }
 .cs-chip > span:not(.cs-chip-side) { @apply min-w-0 wrap-anywhere; }
 .cs-chip.is-selected { @apply border-foreground bg-accent text-foreground; }
+.cs-chip-add { @apply border-dashed text-muted-foreground; }
 .cs-chip-side { @apply grid size-4.5 shrink-0 place-items-center rounded-xs bg-win font-mono text-[10px] font-medium text-win-foreground; }
 .cs-between { @apply flex items-center justify-between gap-3; }
 .cs-score-fieldset { @apply relative border-t pt-2; }
@@ -202,9 +203,7 @@
 .cs-game-actions .cs-text-button { @apply text-[11px] font-normal; }
 .cs-session-footer { @apply mt-6 grid gap-2.5; }
 .cs-session-footer .cs-help { @apply text-center; }
-.cs-late-attendee { @apply mt-4 border-t; }
 .cs-app summary { @apply min-h-11 cursor-pointer py-3 text-xs font-medium; }
-.cs-late-attendee .cs-help { @apply mt-2; }
 .cs-inline-form { @apply flex min-w-0 items-stretch gap-2; }
 .cs-inline-form > .cs-input { @apply min-w-0 flex-1; }
 .cs-inline-form > button { @apply shrink-0; }
@@ -307,6 +306,10 @@
 .cs-confirm-dialog [data-slot="alert-dialog-title"] { @apply pr-0 text-xl; }
 .cs-confirm-dialog [data-slot="alert-dialog-description"] { @apply text-sm; }
 .cs-confirm-dialog [data-slot="alert-dialog-footer"] { @apply gap-2.5; }
+.cs-add-dialog { @apply max-w-[460px] gap-4; }
+.cs-add-body { @apply grid gap-4; }
+.cs-add-body .cs-chips { @apply mt-0; }
+.cs-add-new { @apply justify-start; }
 .cs-edit-dialog { @apply max-w-[530px]; }
 .cs-edit-dialog .cs-game-form { @apply mt-2; }
 .cs-edit-dialog .cs-court-side { @apply md:min-h-28; }
@@ -315,6 +318,7 @@
   .cs-button-primary:hover:not(:disabled) { @apply bg-primary-hover; }
   .cs-button-outline:hover:not(:disabled), .cs-icon-button:hover:not(:disabled), .cs-chip:hover:not(:disabled) { @apply bg-accent; }
   .cs-button-danger:hover:not(:disabled) { @apply bg-destructive/10; }
+  .cs-chip-add:hover:not(:disabled) { @apply border-solid text-foreground; }
   .cs-text-button:hover:not(:disabled) { @apply underline underline-offset-4; }
   .cs-history-session:hover { @apply bg-accent/60; }
 }
