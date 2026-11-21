@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +22,10 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const [pending, setPending] = useState<Pending | null>(null);
   // The last request stays on screen while the dialog fades out.
   const [shown, setShown] = useState<ConfirmOptions | null>(null);
+  // Opened from code, not a Radix trigger, so focus must be handed back by hand.
+  const returnFocus = useRef<HTMLElement | null>(null);
   const confirm = useCallback((options: ConfirmOptions) => new Promise<boolean>((resolve) => {
+    if (document.activeElement instanceof HTMLElement) returnFocus.current = document.activeElement;
     setShown(options);
     setPending((current) => {
       current?.resolve(false);
@@ -37,7 +40,13 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     <ConfirmContext.Provider value={confirm}>
       {children}
       <AlertDialog open={pending !== null} onOpenChange={(open) => { if (!open) settle(false); }}>
-        <AlertDialogContent className="cs-dialog cs-confirm-dialog">
+        <AlertDialogContent className="cs-dialog cs-confirm-dialog" onCloseAutoFocus={(event) => {
+          const target = returnFocus.current;
+          returnFocus.current = null;
+          if (!target?.isConnected) return;
+          event.preventDefault();
+          target.focus();
+        }}>
           <AlertDialogHeader>
             <AlertDialogTitle>{shown?.title}</AlertDialogTitle>
             {shown?.body ? <AlertDialogDescription>{shown.body}</AlertDialogDescription> : null}
