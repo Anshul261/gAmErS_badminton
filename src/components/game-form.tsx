@@ -209,7 +209,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
       {error ? <p className="cs-error" id={`${prefix}-error`} role="alert">{error}</p> : null}
       {/expired|sign.?in|jwt|auth/i.test(error) ? <Link className="cs-text-button" href="/login">Sign in again</Link> : null}
       <p className="cs-form-status" role="status" aria-live="polite">{notice}</p>
-      <button className="cs-button cs-button-green cs-save-button" type="submit" disabled={locked || offline}>
+      <button className="cs-button cs-button-primary cs-save-button" type="submit" disabled={locked || offline}>
         {pending ? "Saving game..." : game ? "Save correction" : "Save game"}<CheckIcon width={18} height={18} aria-hidden="true" />
       </button>
       {offline ? <p className="cs-help">Syncing paused. Your unsaved draft stays here while this page is open.</p> : null}

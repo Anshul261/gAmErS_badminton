@@ -77,7 +77,7 @@ export function StatsTab({ hidden, season, seasonList, seasonPick, setSeasonPick
           <BarChartIcon width={38} height={38} aria-hidden="true" />
           <h3>{season && season.number > 1 ? `Season ${season.number} starts fresh.` : "Bragging rights start with game one."}</h3>
           <p>Log a game to see wins, win rates and season scores for your players.</p>
-          <button className="cs-button cs-button-green" onClick={() => setTab("play")}>Back to the court<ArrowRightIcon width={17} height={17} aria-hidden="true" /></button>
+          <button className="cs-button cs-button-primary" onClick={() => setTab("play")}>Back to the court<ArrowRightIcon width={17} height={17} aria-hidden="true" /></button>
         </div>
         : <>
           {awards.length ? <section className="cs-awards" aria-labelledby="hall-of-fame">

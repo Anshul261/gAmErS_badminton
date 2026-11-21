@@ -166,7 +166,7 @@
 .cs-score-divider { @apply pt-4 text-center font-mono text-2xl font-normal text-muted-foreground; }
 .cs-centered { @apply text-center; }
 .cs-button { @apply inline-flex min-h-11 items-center justify-center gap-2.5 rounded border border-transparent px-4 py-2.5 text-center text-[13px] leading-snug font-semibold no-underline; }
-.cs-button-green { @apply bg-primary text-primary-foreground; }
+.cs-button-primary { @apply bg-primary text-primary-foreground; }
 .cs-button-outline { @apply border-input bg-transparent text-primary; }
 .cs-save-button { @apply min-h-12 justify-between px-5 text-[15px]; }
 .cs-full { @apply w-full; }
@@ -302,7 +302,7 @@
 .cs-edit-dialog .cs-court-side { @apply md:min-h-28; }
 
 @media (hover: hover) {
-  .cs-button-green:hover:not(:disabled) { @apply bg-primary-hover; }
+  .cs-button-primary:hover:not(:disabled) { @apply bg-primary-hover; }
   .cs-button-outline:hover:not(:disabled), .cs-icon-button:hover:not(:disabled), .cs-chip:hover:not(:disabled) { @apply bg-accent; }
   .cs-text-button:hover:not(:disabled) { @apply underline underline-offset-4; }
   .cs-history-session:hover { @apply bg-accent/60; }
