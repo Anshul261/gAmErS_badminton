@@ -2,7 +2,7 @@
 
 import { startTransition, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowDownIcon, ArrowRightIcon, ArchiveIcon, SewingPinIcon, CheckIcon, ChevronRightIcon, CopyIcon, CounterClockwiseClockIcon, ExitIcon, PlusIcon, PlayIcon, ReloadIcon, BarChartIcon, PersonIcon, PauseIcon, Cross2Icon, CheckCircledIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import { ArrowDownIcon, ArrowRightIcon, SewingPinIcon, CheckIcon, ChevronRightIcon, CounterClockwiseClockIcon, ExitIcon, PlusIcon, PlayIcon, ReloadIcon, BarChartIcon, PersonIcon, PauseIcon, Cross2Icon, CheckCircledIcon, QuestionMarkCircledIcon } from "@radix-ui/react-icons";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameForm } from "@/components/game-form";
 import { PlayerDashboard } from "@/components/player-dashboard";
@@ -10,7 +10,8 @@ import { CourtProvider } from "@/components/court/context";
 import type { Tab } from "@/components/court/context";
 import { FaqTab } from "@/components/court/faq-tab";
 import { GameList } from "@/components/court/game-list";
-import { addAttendee, addPlayer, archivePlayer, deleteSession, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, reopenSession, saveGame, startSession, updateProfile, updateSession } from "@/lib/data";
+import { PeopleTab } from "@/components/court/people-tab";
+import { addAttendee, deleteSession, endSession, ensureProfile, loadAllGames, loadOlderSessions, loadSession, loadWorkspace, reopenSession, saveGame, startSession, updateSession } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { dubaiDate, dubaiToday, mapLabel, shortTime } from "@/lib/scoring";
 import { PROVISIONAL_GAMES, crewAwards, playerDashboard, seasonPerformance } from "@/lib/player-stats";
@@ -69,8 +70,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState("");
   const [gamePending, setGamePending] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [playerName, setPlayerName] = useState("");
   const [attendees, setAttendees] = useState<string[]>([]);
   const [target, setTarget] = useState(11);
   const [planDate, setPlanDate] = useState(() => dubaiToday());
@@ -84,7 +83,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const [range, setRange] = useState<Range>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
-  const [myName, setMyName] = useState("");
   const [legend, setLegend] = useState<string | null>(null);
   const actionLock = useRef(false);
   const profileClaimed = useRef(false);
@@ -332,13 +330,6 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const autoLoad = useEffectEvent(() => { if (tab === "history" && rangeFrom && rangeIncomplete && !locked && !offline) loadMore(); });
   useEffect(() => { autoLoad(); }, [tab, rangeFrom, history.length]);
 
-  async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(window.location.origin);
-      setCopied(true);
-    } catch { setError("Copy was blocked. Share the address from your browser instead."); }
-  }
-
   return (
     <div className="cs-app">
       <a className="cs-skip-link" href="#main">Skip to content</a>
@@ -464,32 +455,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
 
           <section hidden={tab !== "stats"} aria-label="Stats"><div className="cs-session-heading"><div><p className="cs-eyebrow">A LITTLE FRIENDLY COMPETITION</p><h2>This season on court.</h2></div><span className="cs-caption">{season ? `${dubaiDate(season.from)} – ${dubaiDate(season.to)}${season === seasonList[0] ? "" : " · final"}` : "Every season"}</span></div><div className="cs-history-filter"><div className="cs-segment cs-segment-wrap" role="group" aria-label="Season">{seasonList.map((item) => <button type="button" key={item.number} aria-pressed={seasonPick === item.number} onClick={() => setSeasonPick(item.number)}>Season {item.number}</button>)}<button type="button" aria-pressed={seasonPick === "all"} onClick={() => setSeasonPick("all")}>All time</button></div></div>{seasonTimer()}<p className="cs-stats-note">Ranked by <strong>Season score</strong>, a win rate adjusted for the number of games played. Singles, doubles and 1v2 count equally. Each season starts fresh; under {PROVISIONAL_GAMES} games you&apos;re Provisional. Tap a <span className="cs-th-help" aria-hidden="true">?</span> to see what a column means.</p>{gamesError ? <div className="cs-banner cs-banner-warning" role="alert"><span>Stats may not be up to date. {gamesError}</span><button className="cs-text-button" disabled={offline} onClick={() => refresh.current()}>Retry</button></div> : null}{stats === null || table === null ? <div className="grid gap-4 py-4" role="status">{!gamesError ? [0, 1, 2].map((row) => <div key={row} aria-hidden="true" className="grid h-12 grid-cols-[2fr_repeat(4,1fr)] gap-3 border-b pb-3"><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /><span className="rounded bg-muted" /></div>) : null}<p className="cs-help">{gamesError ? "Stats are unavailable." : "Counting the games..."}</p></div> : !stats.some((player) => player.played > 0) ? <div className="cs-empty"><BarChartIcon width={38} height={38} aria-hidden="true" /><h3>{season && season.number > 1 ? `Season ${season.number} starts fresh.` : "Bragging rights start with game one."}</h3><p>Log a game to see wins, win rates and season scores for your players.</p><button className="cs-button cs-button-green" onClick={() => setTab("play")}>Back to the court<ArrowRightIcon width={17} height={17} aria-hidden="true" /></button></div> : <>{awards.length ? <section className="cs-awards" aria-labelledby="hall-of-fame"><div className="cs-section-heading"><h3 id="hall-of-fame">Hall of fame</h3><span className="cs-caption">Swipe for more</span></div><ul>{awards.map((award) => <li key={award.id}><p className="cs-award-name">{award.name}</p><p className="cs-award-who">{award.players.map((id, index) => <span key={id}>{index ? <span className="cs-dim">{award.id === "feud" ? " vs " : " & "}</span> : null}<button type="button" className="cs-player-link" onClick={() => setProfileId(id)}>{names.get(id) ?? "Archived player"}</button></span>)}</p><p className="cs-award-value">{award.value}</p><small>{award.line}</small></li>)}</ul></section> : null}<div className="cs-stats-table-wrap"><table className="cs-stats-table"><caption className="cs-sr-only">Player statistics for the selected period, ranked by confidence-adjusted win rate, with provisional players last. Under each name, the last five results.</caption><thead><tr><th scope="col">Player</th>{statColumns.map((column) => <th scope="col" key={column.id}><span className="cs-th"><span>{column.label}</span><button type="button" className="cs-th-help" aria-label={`What does ${column.label} mean?`} aria-expanded={legend === column.id} aria-controls="stats-legend" onClick={() => setLegend((current) => current === column.id ? null : column.id)}>?</button></span></th>)}</tr></thead><tbody>{table.settled.map((player, index) => statRow(player, index + 1))}{table.provisional.length ? <tr className="cs-stats-group"><th scope="rowgroup" colSpan={statColumns.length + 1}>Provisional<small>Under {PROVISIONAL_GAMES} games. Places start at {PROVISIONAL_GAMES} games.</small></th></tr> : null}{table.provisional.map((player) => statRow(player, null))}</tbody></table></div></>}<div id="stats-legend" className="cs-legend" hidden={!legend} role="region" aria-live="polite" aria-label="Column meaning">{legend ? (() => { const column = statColumns.find((item) => item.id === legend)!; return <><div className="cs-section-heading"><h3>{column.label}</h3><button type="button" className="cs-icon-button" aria-label="Close" onClick={() => setLegend(null)}><Cross2Icon width={16} height={16} aria-hidden="true" /></button></div><p>{column.help}</p></>; })() : null}</div><p className="cs-help cs-stats-footnote">Dots under each name are the last 5 games, oldest first. Archived players keep their results. Tap a name for their player card.</p></section>
 
-          <section hidden={tab !== "people"} aria-label="People"><div className="cs-session-heading"><div><p className="cs-eyebrow">THE REGULARS. THE OCCASIONALS. EVERYONE.</p><h2>Same court. Good company.</h2></div></div><div className="cs-people-grid"><div><div className="cs-section-heading"><h3>Player roster</h3><span className="cs-count">{roster.length}</span></div><p className="cs-help">Players are names on the score sheet, not accounts. Anyone signed in can log their games.</p><form className="cs-add-player" onSubmit={(event) => {
-            event.preventDefault();
-            const name = playerName.trim();
-            if (!name) return;
-            void mutate("player", async () => {
-              const player = await addPlayer(name);
-              setWorkspace((current) => current ? { ...current, players: [...current.players, player] } : current);
-              setPlayerName("");
-            }, `${name} is on the roster.`);
-          }}><label htmlFor="player-name">Add a player</label><div className="cs-inline-form"><input className="cs-input" id="player-name" placeholder="Their name or court nickname" maxLength={32} required autoComplete="off" value={playerName} disabled={locked} onChange={(event) => setPlayerName(event.target.value)} /><button className="cs-button cs-button-green" disabled={locked || offline || !playerName.trim()} type="submit"><PlusIcon width={18} height={18} aria-hidden="true" /><span>Add</span></button></div></form><ul className="cs-roster">{roster.map((player, index) => <li key={player.id}><span className="cs-player-number">{String(index + 1).padStart(2, "0")}</span><button type="button" className="cs-player-name cs-player-link" onClick={() => setProfileId(player.id)}>{player.display_name}</button><button type="button" className="cs-icon-button" aria-label={`Archive ${player.display_name}`} title="Archive player" disabled={locked || offline} onClick={() => {
-            if (!window.confirm(`Archive ${player.display_name}? They will be hidden from new sessions. Their old scores and name stay in history.`)) return;
-            void mutate("archive", async () => {
-              await archivePlayer(player.id);
-              setWorkspace((current) => current ? { ...current, players: current.players.map((item) => item.id === player.id ? { ...item, archived: true } : item) } : current);
-              setAttendees((current) => current.filter((id) => id !== player.id));
-            }, `${player.display_name} archived. Past games are unchanged.`);
-          }}><ArchiveIcon width={17} height={17} aria-hidden="true" /></button></li>)}</ul>{!roster.length ? <p className="cs-empty cs-empty-small">No names yet. Add at least two players to start a session.</p> : null}{workspace.players.some((player) => player.archived) ? <details className="cs-archived"><summary>Archived players ({workspace.players.filter((player) => player.archived).length})</summary><ul>{workspace.players.filter((player) => player.archived).map((player) => <li key={player.id}><button type="button" className="cs-player-link" onClick={() => setProfileId(player.id)}>{player.display_name}</button></li>)}</ul><p className="cs-help">Their names and results remain in past games.</p></details> : null}</div><aside className="cs-invite-panel"><div className="cs-you-card"><p className="cs-eyebrow">YOUR NAME ON THE SHEET</p><form className="cs-inline-form" aria-label="Your name" onSubmit={(event) => {
-            event.preventDefault();
-            const name = myName.trim();
-            if (!name) return;
-            void mutate("profile", async () => {
-              const saved = await updateProfile(name);
-              setWorkspace((current) => current ? { ...current, profiles: { ...current.profiles, [userId]: saved } } : current);
-              setMyName("");
-            }, "Name saved. Games you log will show it.");
-          }}><label className="cs-sr-only" htmlFor="my-name">Your name</label><input className="cs-input" id="my-name" maxLength={32} autoComplete="nickname" placeholder={workspace.profiles[userId] ?? defaultName} value={myName} disabled={locked} onChange={(event) => setMyName(event.target.value)} /><button className="cs-button cs-button-outline" type="submit" disabled={locked || offline || !myName.trim()}>{busy === "profile" ? "Saving..." : "Save"}</button></form><p className="cs-help">Shown as &quot;by {workspace.profiles[userId] ?? defaultName}&quot; on games you log or correct. {Object.keys(workspace.profiles).length} {Object.keys(workspace.profiles).length === 1 ? "account is" : "accounts are"} signed up: {Object.values(workspace.profiles).sort((a, b) => a.localeCompare(b)).join(", ")}.</p></div><div className="cs-invite-symbol" aria-hidden="true"><PersonIcon width={27} height={27} /><PlusIcon width={16} height={16} /></div><p className="cs-eyebrow">FOR THE EXISTING CREW</p><h3>Your shared scorebook.</h3><p>Share this address with friends who already have an account. New account registration is closed.</p><button className="cs-button cs-button-green cs-full" onClick={() => void copyLink()}>{copied ? <CheckIcon width={17} height={17} aria-hidden="true" /> : <CopyIcon width={17} height={17} aria-hidden="true" />}{copied ? "Link copied" : "Copy the link"}</button><p role="status" className="cs-sr-only">{copied ? "Link copied to clipboard." : ""}</p><p className="cs-help">Only existing accounts can sign in.</p></aside></div></section>
+          <PeopleTab hidden={tab !== "people"} defaultName={defaultName} setAttendees={setAttendees} />
         </CourtProvider>}
         <FaqTab hidden={tab !== "faq"} />
         <footer className="cs-footer"><span>gAmErS cOuRtSiDe.</span><span>For the love of the game.</span></footer>
