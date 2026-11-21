@@ -8,7 +8,7 @@ const faqs: [string, string][] = [
   ["Players vs accounts", "Players are the names on the score sheet. Accounts are just for signing in. Add your friends' names under People; they don't need an account to be on the sheet."],
   ["Starting a session", "Go to Play, tap everyone who's playing, pick 11 or 21 points, and press Start. A session is one meetup on one court. If two courts are running, start a session for each and every phone picks the court it is logging for."],
   ["Logging a game", "Pick the players on each side (one or two per side, so 1v1, 1v2 and 2v2 all work), type the final score, and save. Games are won by two points, with no cap."],
-  ["Someone turned up late", "Under the game form, open \"Someone joined late?\" and add them to the session. If they're new to the crew, add their name in People first."],
+  ["Someone turned up late", "Tap \"Add to session\" at the end of the player names on Play. Search for them, or type a new name to add someone who has never played with us before."],
   ["Planning a session ahead", "On Play, leave the players empty, set the date and time, add the place and paste a Google Maps or Waze link, then press Plan session. It shows under On court or planned; when people arrive they open it and tap their names."],
   ["Joining a session that's already going", "Don't start a new one. On Play, open the session under On court now. Everyone logging for the same court should be in the same session; you only start a new one for a second court."],
   ["Who logged this game?", "Every game shows \"by <name>\" next to its number, and your own show \"by you\". Set your name under People; it defaults to the first part of your email. If someone corrects a game, their name replaces the original."],
