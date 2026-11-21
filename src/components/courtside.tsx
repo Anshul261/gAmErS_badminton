@@ -6,6 +6,7 @@ import { ArrowRightIcon, CounterClockwiseClockIcon, ExitIcon, PlayIcon, ReloadIc
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GameForm } from "@/components/game-form";
 import { PlayerDashboard } from "@/components/player-dashboard";
+import { useConfirm } from "@/components/court/confirm";
 import { CourtProvider, message, rememberSession, rememberedSession } from "@/components/court/context";
 import type { Tab } from "@/components/court/context";
 import { FaqTab } from "@/components/court/faq-tab";
@@ -40,6 +41,7 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
   const [profileId, setProfileId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const confirm = useConfirm();
   const [busy, setBusy] = useState("");
   const [gamePending, setGamePending] = useState(false);
   const [attendees, setAttendees] = useState<string[]>([]);
@@ -244,8 +246,8 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
     } finally { actionLock.current = false; }
   }
 
-  function openSession(id: string) {
-    if (playData && !playEnded && id !== playSessionId && !window.confirm("Open this session? Any unsaved draft for the current one will be lost.")) return false;
+  async function openSession(id: string) {
+    if (playData && !playEnded && id !== playSessionId && !(await confirm({ title: "Open this session?", body: "Any unsaved draft for the current one will be lost.", action: "Switch session" }))) return false;
     setPlaySessionId(id);
     rememberSession(userId, id);
     setChoosing(false);
@@ -253,8 +255,8 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
     return true;
   }
 
-  function chooseSession() {
-    if (playData && !playEnded && !window.confirm("Leave this session? Any unsaved game draft will be lost.")) return;
+  async function chooseSession() {
+    if (playData && !playEnded && !(await confirm({ title: "Leave this session?", body: "Any unsaved game draft will be lost.", action: "Leave session" }))) return;
     setPlaySessionId(null);
     rememberSession(userId, null);
     setChoosing(true);
@@ -282,8 +284,8 @@ export function Courtside({ userId, defaultName }: { userId: string; defaultName
       <header className="cs-header">
         <button type="button" className="cs-brand" onClick={() => setTab("play")} aria-label="gAmErS cOuRtSiDe home"><span className="cs-brand-mark" aria-hidden="true"><span /></span><span className="cs-brand-name">gAmErS<span className="cs-brand-word"> cOuRtSiDe</span></span><span className="cs-brand-dot">.</span></button>
         <div className="cs-header-actions">
-          <button type="button" className="cs-icon-button" aria-label="Sign out" title="Sign out" disabled={locked || offline} onClick={() => {
-            if (!window.confirm("Sign out? Any unsaved game draft will be lost.")) return;
+          <button type="button" className="cs-icon-button" aria-label="Sign out" title="Sign out" disabled={locked || offline} onClick={async () => {
+            if (!(await confirm({ title: "Sign out?", body: "Any unsaved game draft will be lost.", action: "Sign out" }))) return;
             void mutate("signout", async () => {
               const { error: signOutError } = await createClient().auth.signOut({ scope: "local" });
               if (signOutError) throw signOutError;

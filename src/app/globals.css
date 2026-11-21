@@ -170,6 +170,7 @@
 .cs-button { @apply inline-flex min-h-11 items-center justify-center gap-2.5 rounded border border-transparent px-4 py-2.5 text-center text-[13px] leading-snug font-semibold no-underline; }
 .cs-button-primary { @apply bg-primary text-primary-foreground; }
 .cs-button-outline { @apply border-input bg-transparent text-foreground; }
+.cs-button-danger { @apply border-destructive/40 bg-transparent text-destructive; }
 .cs-save-button { @apply min-h-12 justify-between px-5 text-[15px]; }
 .cs-full { @apply w-full; }
 .cs-icon-button { @apply inline-flex size-11 min-w-11 items-center justify-center rounded text-inherit; }
@@ -299,9 +300,13 @@
 .cs-footer span:first-child { @apply text-sm font-semibold tracking-tight; }
 .cs-actions { @apply flex flex-wrap justify-center gap-2.5; }
 .cs-dialog { @apply max-h-[calc(100svh-2rem)] w-[calc(100%-2rem)] max-w-[460px] overflow-y-auto overscroll-contain rounded-lg bg-card px-5 py-6 font-sans text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] md:p-6; }
-.cs-dialog [data-slot="dialog-title"] { @apply pr-8 text-2xl leading-tight font-semibold tracking-tight; }
-.cs-dialog [data-slot="dialog-description"] { @apply text-xs leading-relaxed text-muted-foreground; }
+.cs-dialog :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"]) { @apply pr-8 text-2xl leading-tight font-semibold tracking-tight; }
+.cs-dialog :is([data-slot="dialog-description"], [data-slot="alert-dialog-description"]) { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-dialog [data-slot="dialog-close"] { @apply min-h-11 min-w-11; }
+.cs-confirm-dialog { @apply max-w-[400px] gap-5; }
+.cs-confirm-dialog [data-slot="alert-dialog-title"] { @apply pr-0 text-xl; }
+.cs-confirm-dialog [data-slot="alert-dialog-description"] { @apply text-sm; }
+.cs-confirm-dialog [data-slot="alert-dialog-footer"] { @apply gap-2.5; }
 .cs-edit-dialog { @apply max-w-[530px]; }
 .cs-edit-dialog .cs-game-form { @apply mt-2; }
 .cs-edit-dialog .cs-court-side { @apply md:min-h-28; }
@@ -309,6 +314,7 @@
 @media (hover: hover) {
   .cs-button-primary:hover:not(:disabled) { @apply bg-primary-hover; }
   .cs-button-outline:hover:not(:disabled), .cs-icon-button:hover:not(:disabled), .cs-chip:hover:not(:disabled) { @apply bg-accent; }
+  .cs-button-danger:hover:not(:disabled) { @apply bg-destructive/10; }
   .cs-text-button:hover:not(:disabled) { @apply underline underline-offset-4; }
   .cs-history-session:hover { @apply bg-accent/60; }
 }

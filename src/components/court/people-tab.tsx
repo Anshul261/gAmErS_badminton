@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { ArchiveIcon, CheckIcon, CopyIcon, PersonIcon, PlusIcon } from "@radix-ui/react-icons";
+import { useConfirm } from "@/components/court/confirm";
 import { useCourt } from "@/components/court/context";
 import { addPlayer, archivePlayer, updateProfile } from "@/lib/data";
 
 export function PeopleTab({ hidden, defaultName, setAttendees }: { hidden: boolean; defaultName: string; setAttendees: React.Dispatch<React.SetStateAction<string[]>> }) {
   const { userId, workspace, locked, offline, busy, mutate, setError, setProfileId, setWorkspace } = useCourt();
+  const confirm = useConfirm();
   const [playerName, setPlayerName] = useState("");
   const [myName, setMyName] = useState("");
   const [copied, setCopied] = useState(false);
@@ -29,8 +31,8 @@ export function PeopleTab({ hidden, defaultName, setAttendees }: { hidden: boole
         setWorkspace((current) => current ? { ...current, players: [...current.players, player] } : current);
         setPlayerName("");
       }, `${name} is on the roster.`);
-    }}><label htmlFor="player-name">Add a player</label><div className="cs-inline-form"><input className="cs-input" id="player-name" placeholder="Their name or court nickname" maxLength={32} required autoComplete="off" value={playerName} disabled={locked} onChange={(event) => setPlayerName(event.target.value)} /><button className="cs-button cs-button-primary" disabled={locked || offline || !playerName.trim()} type="submit"><PlusIcon width={18} height={18} aria-hidden="true" /><span>Add</span></button></div></form><ul className="cs-roster">{roster.map((player, index) => <li key={player.id}><span className="cs-player-number">{String(index + 1).padStart(2, "0")}</span><button type="button" className="cs-player-name cs-player-link" onClick={() => setProfileId(player.id)}>{player.display_name}</button><button type="button" className="cs-icon-button" aria-label={`Archive ${player.display_name}`} title="Archive player" disabled={locked || offline} onClick={() => {
-      if (!window.confirm(`Archive ${player.display_name}? They will be hidden from new sessions. Their old scores and name stay in history.`)) return;
+    }}><label htmlFor="player-name">Add a player</label><div className="cs-inline-form"><input className="cs-input" id="player-name" placeholder="Their name or court nickname" maxLength={32} required autoComplete="off" value={playerName} disabled={locked} onChange={(event) => setPlayerName(event.target.value)} /><button className="cs-button cs-button-primary" disabled={locked || offline || !playerName.trim()} type="submit"><PlusIcon width={18} height={18} aria-hidden="true" /><span>Add</span></button></div></form><ul className="cs-roster">{roster.map((player, index) => <li key={player.id}><span className="cs-player-number">{String(index + 1).padStart(2, "0")}</span><button type="button" className="cs-player-name cs-player-link" onClick={() => setProfileId(player.id)}>{player.display_name}</button><button type="button" className="cs-icon-button" aria-label={`Archive ${player.display_name}`} title="Archive player" disabled={locked || offline} onClick={async () => {
+      if (!(await confirm({ title: `Archive ${player.display_name}?`, body: "They will be hidden from new sessions. Their old scores and name stay in history.", action: "Archive", danger: true }))) return;
       void mutate("archive", async () => {
         await archivePlayer(player.id);
         setWorkspace((current) => current ? { ...current, players: current.players.map((item) => item.id === player.id ? { ...item, archived: true } : item) } : current);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ArrowRightIcon, CheckCircledIcon, CheckIcon, PersonIcon, PlusIcon, SewingPinIcon } from "@radix-ui/react-icons";
+import { useConfirm } from "@/components/court/confirm";
 import { rememberSession, useCourt } from "@/components/court/context";
 import { GameForm } from "@/components/game-form";
 import { GameList } from "@/components/court/game-list";
@@ -23,8 +24,8 @@ type PlayTabProps = {
   gameLimit: number;
   setGameLimit: (limit: number) => void;
   setChoosing: (choosing: boolean) => void;
-  openSession: (id: string) => boolean;
-  chooseSession: () => void;
+  openSession: (id: string) => Promise<boolean>;
+  chooseSession: () => Promise<void>;
   save: (input: GameInput, original?: Game) => Promise<void>;
   setGamePending: (pending: boolean) => void;
   whoPlayed: (sessionId: string) => string[];
@@ -33,6 +34,7 @@ type PlayTabProps = {
 
 export function PlayTab({ hidden, playSessionId, setPlaySessionId, playData, playEnded, activeSessions, sessionErrors, attendees, setAttendees, gameLimit, setGameLimit, setChoosing, openSession, chooseSession, save, setGamePending, whoPlayed, isPlanned }: PlayTabProps) {
   const { userId, workspace, names, locked, offline, busy, error, mutate, setError, setTab, setSessions, setWorkspace } = useCourt();
+  const confirm = useConfirm();
   const [target, setTarget] = useState(11);
   const [planDate, setPlanDate] = useState(() => dubaiToday());
   const [planTime, setPlanTime] = useState("");
@@ -68,8 +70,8 @@ export function PlayTab({ hidden, playSessionId, setPlaySessionId, playData, pla
               void mutate("attendee", async () => { await addAttendee(playData.session, latePlayerId); setLatePlayerId(""); }, "Player added to this session.");
             }}><label className="cs-sr-only" htmlFor="late-player">Add a late attendee</label><select className="cs-input" id="late-player" value={latePlayerId} onChange={(event) => setLatePlayerId(event.target.value)} disabled={locked} required><option value="">Choose a player</option>{roster.filter((player) => !playData.playerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.display_name}</option>)}</select><button className="cs-button cs-button-outline" type="submit" disabled={locked || offline || !latePlayerId}>Add</button></form><p className="cs-help">New face? Add their name in People first.</p></details> : null}
           </div>
-          <aside className="cs-score-sheet"><div className="cs-section-heading"><h3>The score sheet</h3><span className="cs-count">{playData.games.length}</span></div><GameList data={playData} limit={gameLimit} onMore={() => setGameLimit(gameLimit + 50)} /><div className="cs-session-footer">{!playEnded ? <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={() => {
-            if (!window.confirm("Finish this session? Save any game draft first. Scores can still be corrected in History.")) return;
+          <aside className="cs-score-sheet"><div className="cs-section-heading"><h3>The score sheet</h3><span className="cs-count">{playData.games.length}</span></div><GameList data={playData} limit={gameLimit} onMore={() => setGameLimit(gameLimit + 50)} /><div className="cs-session-footer">{!playEnded ? <button type="button" className="cs-button cs-button-outline cs-full" disabled={locked || offline} onClick={async () => {
+            if (!(await confirm({ title: "Finish this session?", body: "Save any game draft first. Scores can still be corrected in History.", action: "Finish session" }))) return;
             void mutate("finish", async () => {
               await endSession(playData.session.id);
               const endedAt = new Date().toISOString();
@@ -80,7 +82,7 @@ export function PlayTab({ hidden, playSessionId, setPlaySessionId, playData, pla
         </div>
       </> : <div className="cs-setup-grid">{activeSessions.length ? <div className="cs-court-list"><div className="cs-section-heading"><h3 id="on-court">On court or planned</h3><span className="cs-count">{activeSessions.length}</span></div><ul aria-labelledby="on-court">{activeSessions.map((session) => {
         const who = whoPlayed(session.id);
-        return <li key={session.id}><div><strong>{who.length ? who.join(", ") : "Nobody in yet"}</strong><small>{isPlanned(session) || session.start_time || session.venue_name ? `${isPlanned(session) ? "Planned " : ""}${whenWhere(session)}` : `Started ${dubaiDate(session.created_at, { day: undefined, month: undefined, hour: "2-digit", minute: "2-digit" })}`} · Games to {session.target_score}</small></div><button type="button" className="cs-button cs-button-primary" disabled={locked} onClick={() => openSession(session.id)}>Open<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></li>;
+        return <li key={session.id}><div><strong>{who.length ? who.join(", ") : "Nobody in yet"}</strong><small>{isPlanned(session) || session.start_time || session.venue_name ? `${isPlanned(session) ? "Planned " : ""}${whenWhere(session)}` : `Started ${dubaiDate(session.created_at, { day: undefined, month: undefined, hour: "2-digit", minute: "2-digit" })}`} · Games to {session.target_score}</small></div><button type="button" className="cs-button cs-button-primary" disabled={locked} onClick={() => void openSession(session.id)}>Open<ArrowRightIcon width={16} height={16} aria-hidden="true" /></button></li>;
       })}</ul><p className="cs-help">Everyone logging the same court should open the same session. Only start a new one below if you are on another court.</p></div> : null}<form className="cs-session-setup" aria-label="Start a session" onSubmit={(event) => {
         event.preventDefault();
         const ids = attendees.filter((id) => roster.some((player) => player.id === id));
