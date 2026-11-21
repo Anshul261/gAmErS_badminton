@@ -140,9 +140,10 @@
 .cs-label, .cs-field label, .cs-add-player > label { @apply mb-1.5 block text-xs font-semibold; }
 .cs-help { @apply text-xs leading-relaxed text-muted-foreground; }
 .cs-fieldset > .cs-help { @apply mb-2.5 md:mb-3; }
-.cs-court { @apply relative isolate grid grid-cols-2 gap-0 rounded border border-court-line bg-court p-2 text-court-foreground md:p-2.5; }
-.cs-court::before { content: ""; position: absolute; inset: 8px 24px; border: 1px solid var(--court-line); pointer-events: none; z-index: -1; }
-.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border border-court-line bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
+.cs-court { --court-pad: 8px; padding: var(--court-pad); @apply relative isolate grid grid-cols-2 gap-0 rounded border border-court-line bg-court text-court-foreground md:[--court-pad:10px]; }
+.cs-court::before { content: ""; position: absolute; inset: var(--court-pad) 24px; border: 1px solid var(--court-line); pointer-events: none; z-index: -1; }
+.cs-court-side { @apply relative flex min-h-24 flex-col items-center justify-center gap-1.5 rounded-none border-0 bg-transparent px-3 py-2.5 text-center md:min-h-32 md:gap-2 md:px-3.5 md:py-4; }
+.cs-court-side + .cs-court-side { border-left: 1px solid var(--court-line); }
 .cs-court-side.is-selected { @apply bg-court-foreground/5; box-shadow: inset 0 0 0 2px var(--court-accent); }
 .cs-court-side:focus-visible { @apply -outline-offset-4 outline-court-foreground; }
 .cs-court-side-label { @apply flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] text-muted-foreground uppercase; }
@@ -184,7 +185,7 @@
 .cs-form-status { @apply text-xs leading-normal text-primary; }
 .cs-form-status:empty { @apply hidden; }
 .cs-toasts { @apply pointer-events-none fixed inset-x-0 z-60 mx-auto grid max-w-md gap-2 px-4; bottom: calc(16px + env(safe-area-inset-bottom)); }
-.cs-toast { @apply pointer-events-auto flex items-center justify-between gap-2 rounded border bg-card px-4 py-3 text-sm text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] wrap-anywhere animate-in fade-in-0 slide-in-from-bottom-2; }
+.cs-toast { @apply pointer-events-auto flex items-center justify-between gap-2 rounded border border-input bg-card px-4 py-3 text-sm text-foreground shadow-[0_8px_30px_rgb(0_0_0/0.6)] wrap-anywhere animate-in fade-in-0 slide-in-from-bottom-2; }
 .cs-toast > span { @apply min-w-0; }
 .cs-toast > button { @apply shrink-0; }
 .cs-toast-error { @apply border-destructive/40 text-destructive; }
