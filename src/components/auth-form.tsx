@@ -50,14 +50,14 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
   const title = mode === "forgot" ? "Forgot your password?" : mode === "reset" ? "A fresh password." : "Back for another game?";
   return (
     <main className="min-h-dvh bg-background lg:grid lg:grid-cols-[1.1fr_1fr]">
-      <section className="relative flex min-h-56 flex-col justify-between overflow-hidden bg-court px-6 py-6 text-court-foreground md:px-12 lg:min-h-dvh lg:p-16">
+      <section className="relative flex min-h-56 flex-col justify-between overflow-hidden border-b bg-court bg-[radial-gradient(ellipse_at_top_left,color-mix(in_oklab,var(--court-accent)_12%,transparent),transparent_60%)] px-6 py-6 text-court-foreground md:px-12 lg:min-h-dvh lg:border-r lg:border-b-0 lg:p-16">
         <div className="relative z-10 flex items-center gap-3 text-xl font-bold tracking-tight"><span className="grid size-9 place-items-center rounded-full border border-court-foreground/40 text-sm">g.</span> gAmErS cOuRtSiDe</div>
         <div className="relative z-10 my-7 max-w-md lg:my-24">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-court-accent">Your people. Your scorebook.</p>
           <h1 className="text-4xl font-semibold leading-[1.08] tracking-[-0.045em] md:text-5xl lg:text-6xl">Play the game.<br />Keep the receipts.</h1>
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-court-foreground/75 lg:text-base">Log the last game before the next one starts. Settle the arguments later.</p>
         </div>
-        <p className="relative z-10 hidden text-sm text-court-foreground/65 lg:block">Badminton nights, Dubai.</p>
+        <p className="relative z-10 hidden text-sm text-court-foreground/70 lg:block">Badminton nights, Dubai.</p>
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-[-100px] h-[380px] w-[280px] rotate-[-24deg] border-2 border-court-foreground/10"><div className="absolute inset-x-0 top-1/2 border-t-2 border-court-foreground/10" /><div className="absolute inset-y-0 left-1/2 border-l-2 border-court-foreground/10" /><div className="absolute inset-5 border border-court-foreground/10" /></div>
       </section>
       <section className="flex items-center justify-center px-6 py-8 md:p-12">
@@ -69,8 +69,8 @@ export function AuthForm({ callbackError = false, resetPassword = false }: { cal
             <fieldset disabled={pending} className="space-y-5">
               {mode !== "reset" ? <div className="space-y-2"><Label htmlFor="email">Email</Label><Input className="h-12 bg-card text-base md:text-base" id="email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required maxLength={254} /></div> : null}
               {mode !== "forgot" ? <div className="space-y-2"><Label htmlFor="password">{mode === "reset" ? "New password" : "Password"}</Label><Input className="h-12 bg-card text-base md:text-base" id="password" name="password" type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "login" ? undefined : 8} maxLength={128} required /></div> : null}
-              {error ? <p role="alert" className="rounded border-l-2 border-destructive bg-destructive/5 p-3 text-sm text-destructive">{error}</p> : null}
-              {message ? <p role="status" className="rounded bg-accent p-3 text-sm text-primary">{message}</p> : null}
+              {error ? <p role="alert" className="rounded border-l-2 border-destructive bg-destructive/10 p-3 text-sm text-destructive">{error}</p> : null}
+              {message ? <p role="status" className="rounded bg-accent p-3 text-sm text-foreground">{message}</p> : null}
               <Button type="submit" className="h-12 w-full gap-2 text-base">{pending ? "One moment..." : mode === "forgot" ? "Send reset link" : mode === "reset" ? "Save password" : "Sign in"}<ArrowRightIcon aria-hidden="true" width={18} height={18} /></Button>
             </fieldset>
           </form>
