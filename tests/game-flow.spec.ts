@@ -146,8 +146,8 @@ test("log mixed doubles, sync phones, correct scores and browse history", async 
     // Riya beat Sam + Jay solo (a 1v2), then Riya/Sam beat Jay 2v1. Everyone is new, so all three are Provisional.
     await expect(table.getByRole("row").filter({ hasText: riya })).toContainText("100%");
     await expect(table.getByRole("row").filter({ hasText: sam })).toContainText("0%");
-    await expect(table.getByRole("columnheader", { name: /Skill/ })).toBeVisible();
-    await page.getByRole("button", { name: "What does Skill mean?" }).click();
+    await expect(table.getByRole("columnheader", { name: /Season score/ })).toBeVisible();
+    await page.getByRole("button", { name: "What does Season score mean?" }).click();
     await expect(page.getByRole("region", { name: "Column meaning" })).toContainText("Higher is better");
     await expect(table.getByRole("rowheader", { name: /Provisional/ })).toBeVisible();
     await expect(page.getByRole("group", { name: "Season" }).getByRole("button", { name: "All time" })).toBeVisible();
