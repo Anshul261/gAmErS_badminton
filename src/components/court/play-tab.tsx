@@ -42,6 +42,12 @@ export function PlayTab({ hidden, playSessionId, setPlaySessionId, playData, pla
   const [planVenue, setPlanVenue] = useState("");
   const [planUrl, setPlanUrl] = useState("");
   const [adding, setAdding] = useState<string | null>(null); // null = closed; a string = open with that search
+  // Finishing the session unmounts the dialog; forget it so reopening the session doesn't pop it back up.
+  const [wasEnded, setWasEnded] = useState(playEnded);
+  if (wasEnded !== playEnded) {
+    setWasEnded(playEnded);
+    if (playEnded) setAdding(null);
+  }
   const roster = workspace.players.filter((player) => !player.archived);
   const whenWhere = (session: Session) => [
     dubaiDate(session.session_date, { weekday: "short", year: session.session_date.slice(0, 4) === dubaiToday().slice(0, 4) ? undefined : "numeric" }),

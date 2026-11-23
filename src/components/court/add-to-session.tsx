@@ -62,7 +62,12 @@ function AddToSessionBody({ session, here, initialQuery, onDone }: { session: Se
       {typed && !exact ? <button type="button" className="cs-button cs-button-outline cs-add-new" disabled={off} onClick={() => void mutate("attendee", async () => {
         const player = await addPlayer(typed);
         setWorkspace((current) => current ? { ...current, players: [...current.players, player] } : current);
-        await addAttendee(session, player.id);
+        try {
+          await addAttendee(session, player.id);
+        } catch (cause) {
+          // The player now exists, so say so: tapping their name retries without a duplicate-name error.
+          throw new Error(`${player.display_name} is on the roster now but wasn't added to this session. Tap their name to try again. ${cause instanceof Error ? cause.message : ""}`.trim());
+        }
         setAdded((current) => [...current, player.id]);
         join(player.id);
         setQuery("");
