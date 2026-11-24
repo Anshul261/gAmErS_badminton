@@ -6,7 +6,7 @@ const faqs: [string, string][] = [
   ["What is this?", "A shared scorebook for our badminton crew. Everyone who signs in sees the same players, sessions and stats, and anyone can log a game."],
   ["How do I get in?", "Sign in with your existing account. New account registration is closed. Adding a player to the score sheet does not create an account."],
   ["Players vs accounts", "Players are the names on the score sheet. Accounts are just for signing in. Add your friends' names under People; they don't need an account to be on the sheet."],
-  ["Starting a session", "Go to Play, tap everyone who's playing, pick 11 or 21 points, and press Start. A session is one meetup on one court. If two courts are running, start a session for each and every phone picks the court it is logging for."],
+  ["Starting a session", "Go to Play, tap everyone who's playing, pick 11, 15 or 21 points, and press Start. A session is one meetup on one court. If two courts are running, start a session for each and every phone picks the court it is logging for."],
   ["Logging a game", "Pick the players on each side (one or two per side, so 1v1, 1v2 and 2v2 all work), type the final score, and save. Games are won by two points, with no cap."],
   ["Someone turned up late", "Tap \"Add to session\" at the end of the player names on Play. Search for them, or type a new name to add someone who has never played with us before."],
   ["Planning a session ahead", "On Play, leave the players empty, set the date and time, add the place and paste a Google Maps or Waze link, then press Plan session. It shows under On court or planned; when people arrive they open it and tap their names."],
