@@ -168,14 +168,15 @@ begin
 
   for score in select * from (values
     (11,11,0), (11,0,11), (11,12,10), (11,10,12), (11,31,29),
-    (21,21,0), (21,0,21), (21,22,20), (21,20,22), (21,40,38)
+    (21,21,0), (21,0,21), (21,22,20), (21,20,22), (21,40,38),
+    (15,15,0), (15,13,15), (15,17,15)
   ) as valid(points,a,b) loop
     insert into public.games (id, session_id, target_score, side_a_player_1, side_b_player_1, score_a, score_b)
     values (pg_catalog.gen_random_uuid(), sid, score.points, p1, p2, score.a, score.b);
   end loop;
   for score in select * from (values
     (11,0,0), (11,11,11), (11,11,10), (11,12,11), (11,12,9), (11,10,0), (11,-1,11),
-    (21,21,20), (21,22,19), (21,20,0), (15,15,0)
+    (21,21,20), (21,22,19), (21,20,0), (15,15,14), (13,13,0)
   ) as invalid(points,a,b) loop
     perform pg_temp.expect_error(format(
       'insert into public.games (id,session_id,target_score,side_a_player_1,side_b_player_1,score_a,score_b) values (gen_random_uuid(),%L,%s,%L,%L,%s,%s)',

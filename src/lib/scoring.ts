@@ -1,5 +1,5 @@
 export function scoreError(a: number, b: number, target: number): string | null {
-  if (![11, 21].includes(target)) return "Choose a game to 11 or 21.";
+  if (![11, 15, 21].includes(target)) return "Choose a game to 11, 15 or 21.";
   if (![a, b].every((n) => Number.isInteger(n) && n >= 0 && n <= 32767)) {
     return "Enter a whole score of zero or more for each side.";
   }

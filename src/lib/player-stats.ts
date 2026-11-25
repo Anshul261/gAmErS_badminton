@@ -27,7 +27,7 @@ export type PlayerDashboard = {
   recentDelta: number | null;
   /** Games that went past the target, e.g. 12-10 or 23-21. */
   deuce: WinLoss;
-  /** Wins by a big margin: 6+ in a game to 11, 11+ in a game to 21. */
+  /** Wins by a big margin: 6+ in a game to 11, 8+ to 15, 11+ to 21. */
   demolitions: number;
   bagels: number;
   /** Losses by exactly two. */
@@ -51,7 +51,7 @@ const sides = (game: StatGame) => [
 
 const chronological = (a: StatGame, b: StatGame) => a.session_date.localeCompare(b.session_date) || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
 const isDeuce = (game: StatGame) => Math.max(game.score_a, game.score_b) > game.target_score;
-const isDemolition = (game: StatGame) => Math.abs(game.score_a - game.score_b) >= (game.target_score === 21 ? 11 : 6);
+const isDemolition = (game: StatGame) => Math.abs(game.score_a - game.score_b) >= (game.target_score === 21 ? 11 : game.target_score === 15 ? 8 : 6);
 
 function bump(map: Map<string, Rival>, id: string, won: boolean) {
   const rival = map.get(id) ?? { id, wins: 0, losses: 0 };

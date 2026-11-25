@@ -188,7 +188,7 @@ export function GameForm({ session, players, game, offline, disabled = false, on
         <div className="cs-between cs-target-row">
           <span className="cs-help">Play to</span>
           <div className="cs-segment" aria-label="Game target">
-            {[11, 21].map((value) => <button type="button" key={value} aria-pressed={target === value}
+            {[11, 15, 21].map((value) => <button type="button" key={value} aria-pressed={target === value}
               onClick={() => { setTarget(value); setNotice(""); }}>{value}</button>)}
           </div>
         </div>
